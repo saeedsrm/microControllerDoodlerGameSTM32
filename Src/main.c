@@ -71,7 +71,17 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+
+
+
 typedef unsigned char byte;
+//int stair=1;
+//int doodler=2;
+//int brokenStair=3;
+//int coil=4;
+//int hole=5;
+//int monster=6;
 
 byte doodler[] = {
   0x00,
@@ -139,7 +149,6 @@ byte monster[] = {
   0x0A
 };
 
-
 uint32_t value = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
@@ -149,12 +158,40 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		HAL_ADC_Start_IT(&hadc1);
 //	}
 }
+int  board[20][4];
+int doodlerState=1;
+int score=0;
+int difficulty=0;
+
+void printFirstPage(){
+
+}
+void checkChange(){
+
+}
+void moveDoodler(){
+
+}
+void printChangeBoard(){
+
+}
+void genarateBoard(){
+
+}
+void pageUp(){
+
+}
+void getPosionDoodler(){
+
+}
+
 
 bool stopFlag = true;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM3)    // TIM3 for controlling the buzzer
 	{
+		moveDoodler();
 //		if(stopFlag)
 //		{
 //			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
@@ -223,7 +260,7 @@ int main(void)
   write(2);
   write(3);
   write(4);
-  write(5)
+  write(5);
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
