@@ -83,6 +83,17 @@ byte doodler[] = {
   0x00,
   0x00
 };
+
+byte wall[] = {
+  0x06,
+  0x06,
+  0x06,
+  0x06,
+  0x06,
+  0x06,
+  0x06,
+  0x06
+};
 uint32_t value = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
@@ -153,9 +164,12 @@ int main(void)
   LiquidCrystal(GPIOD, GPIO_PIN_0, 0, GPIO_PIN_1, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7);
   begin(20, 4);
   createChar(0,doodler);
+  createChar(1,wall);
 
   setCursor(0, 0);
   write(0);
+  write(1);
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
 //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
