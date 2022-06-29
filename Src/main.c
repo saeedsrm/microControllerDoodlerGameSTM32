@@ -71,6 +71,18 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+typedef unsigned char byte;
+
+byte dodler[] = {
+  0x0E,
+  0x0A,
+  0x04,
+  0x04,
+  0x1F,
+  0x04,
+  0x0E,
+  0x11
+};
 uint32_t value = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
@@ -140,8 +152,10 @@ int main(void)
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   LiquidCrystal(GPIOD, GPIO_PIN_0, 0, GPIO_PIN_1, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7);
   begin(20, 4);
+  createChar(0,dodler);
 
   setCursor(0, 0);
+  write(0);
   print("hello word");
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
