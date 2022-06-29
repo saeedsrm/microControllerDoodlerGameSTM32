@@ -84,7 +84,7 @@ byte doodler[] = {
   0x00
 };
 
-byte wall[] = {
+byte stair[] = {
   0x06,
   0x06,
   0x06,
@@ -94,6 +94,52 @@ byte wall[] = {
   0x06,
   0x06
 };
+
+byte brokenStair[] = {
+  0x06,
+  0x06,
+  0x06,
+  0x00,
+  0x00,
+  0x06,
+  0x06,
+  0x06
+};
+
+byte coil[] = {
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0x15,
+  0x1F,
+  0x00,
+  0x00
+};
+
+byte hole[] = {
+  0x00,
+  0x1F,
+  0x10,
+  0x10,
+  0x10,
+  0x10,
+  0x1F,
+  0x00
+};
+
+byte monster[] = {
+  0x0A,
+  0x04,
+  0x0E,
+  0x0A,
+  0x0A,
+  0x0E,
+  0x04,
+  0x0A
+};
+
+
 uint32_t value = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
@@ -164,11 +210,20 @@ int main(void)
   LiquidCrystal(GPIOD, GPIO_PIN_0, 0, GPIO_PIN_1, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7);
   begin(20, 4);
   createChar(0,doodler);
-  createChar(1,wall);
+  createChar(1,stair);
+  createChar(2,brokenStair);
+  createChar(3,coil);
+  createChar(4,hole);
+  createChar(5,monster);
+
 
   setCursor(0, 0);
   write(0);
   write(1);
+  write(2);
+  write(3);
+  write(4);
+  write(5)
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
