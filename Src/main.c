@@ -151,6 +151,7 @@ int downStatus = 0;
 int upStatus = 3;
 int lastPosition [2];
 int newPosition [2];
+int score = 0;
 
 int EMPTY_CELL_NUM = -1;
 int DOODLER_NUM = 0;
@@ -178,7 +179,17 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   //	}
 }
 
-void printFirstPage(){}
+void genarateBoard() {
+
+}
+
+void pageUp() {
+
+}
+
+void updateScore(){
+
+}
 
 void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
@@ -220,7 +231,18 @@ void crashMonster(){
 }
 
 void gameOver(){
-
+  for(int i = 0; i<=19; i++){
+    for(int j=0; j < 3; j++){
+      if(board[i][j] != -1){
+        setCursor(i,j);
+        printf(" ")
+      }
+    }
+  }
+  setCursor(10,0);
+  printf("game");
+  setCursor(8,0);
+  printf("over");
 }
 
 void checkChange(){
@@ -295,6 +317,7 @@ void crashMonsterMoveDown(){
     printf(" ");
     write(DOODLER_NUM);
     doodlerPosition[1] =  newPosition[1];
+    changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
   }
 }
 
@@ -331,11 +354,6 @@ void moveDoodler() {
   else {
     changeDoodlerPosition(-1);
   }
-}
-
-void genarateBoard() {
-}
-void pageUp() {
 }
 
 bool stopFlag = true;
@@ -380,14 +398,6 @@ int main(void)
   createChar(COIL_NUM, coil);
   createChar(HOLE_NUM, hole);
   createChar(MONSTER_NUM, monster);
-
-  setCursor(0, 0);
-  write(DOODLER_NUM);
-  write(STAIR_NUM);
-  write(BROKEN_STAIR_NUM);
-  write(COIL_NUM);
-  write(HOLE_NUM);
-  write(MONSTER_NUM);
   /* USER CODE END Init */
 
   /* Configure the system clock */
