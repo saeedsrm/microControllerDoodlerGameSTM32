@@ -138,9 +138,10 @@ byte monster[] = {
     0x0A,
     0x0E,
     0x04,
-    0x0A};
+    0x0A
+};
 
-begin(20, 4);
+
 
 int board[4][20];
 int doodlerState = 1;
@@ -162,20 +163,7 @@ int REMOVE = 0;
 int MOVE = 1;
 int WRITE = 2;
 
-createChar(DOODLER_NUM, doodler);
-createChar(STAIR_NUM, stair);
-createChar(BROKEN_STAIR_NUM, brokenStair);
-createChar(COIL_NUM, coil);
-createChar(HOLE_NUM, hole);
-createChar(MONSTER_NUM, monster);
 
-setCursor(0, 0);
-write(DOODLER_NUM);
-write(STAIR_NUM);
-write(BROKEN_STAIR_NUM);
-write(COIL_NUM);
-write(HOLE_NUM);
-write(MONSTER_NUM);
 
 uint32_t value = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -189,7 +177,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void printFirstPage(){}
 
-void crashEmptyCell(int[] lastPosition, int[] newPosition){
+void crashEmptyCell(int lastPosition [], int newPosition []){
   setCursor(lastPosition[0], lastPosition[1]);
   printf(" ");
   setCursor(newPosition[0], newPosition[1]);
@@ -198,12 +186,12 @@ void crashEmptyCell(int[] lastPosition, int[] newPosition){
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
-void crashStair(int[] lastPosition, int[] newPosition){
+void crashStair(int lastPosition [], int newPosition []){
   doodlerDisplacementCount = 1;
   pageUp();
 }
 
-void crashBrokenStair(int[] lastPosition, int[] newPosition){
+void crashBrokenStair(int lastPosition [], int newPosition []){
   setCursor(lastPosition[0], lastPosition[1]);
   printf(" ");
   setCursor(newPosition[0], newPosition[1]);
@@ -213,15 +201,15 @@ void crashBrokenStair(int[] lastPosition, int[] newPosition){
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
-void crashCoil(int[] lastPosition, int[] newPosition){
+void crashCoil(int lastPosition [], int newPosition []){
 
 }
 
-void crashHole(int[] lastPosition, int[] newPosition){
+void crashHole(int lastPosition [], int newPosition []){
 
 }
 
-void crashMonster(int[] lastPosition, int[] newPosition){
+void crashMonster(int lastPosition [], int newPosition []){
 
 }
 
@@ -229,7 +217,7 @@ void gameOver(){
 
 }
 
-void checkChange(int[] lastPosition, int[] newPosition){
+void checkChange(int lastPosition [], int newPosition []){
   if(newPosition[1] == -1){
     gameOver();
   }
@@ -258,7 +246,7 @@ void checkChange(int[] lastPosition, int[] newPosition){
   }
 }
 
-void changeBoard(int[] lastPosition, int[] curPosotion,int charNum , int moveOrRemoveOrWrite){
+void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveOrRemoveOrWrite){
   if(moveOrRemoveOrWrite == MOVE){
     board[lastPosition[0]][lastPosition[1]] = -1;
     board[curPosotion[0]][curPosotion[1]] = charNum;
@@ -270,18 +258,21 @@ void changeBoard(int[] lastPosition, int[] curPosotion,int charNum , int moveOrR
 }
 
 void changeDoodlerPosition(int moveDirecrion) {
-  int [2] lastPosition = {doodlerPosition[0] , doodlerPosition[1]}
-  int [2] newPosition;
+  int lastPosition [2] = {doodlerPosition[0] , doodlerPosition[1]};
+  int newPosition [2] ;
   if (moveDirecrion == 1) {
     doodlerDisplacementCount += 1;
     if (doodlerDisplacementCount == 8) {
       doodlerDisplacementCount = -1;
     }
-    newPosition = {doodlerPosition[0] , doodlerPosition[1]+1};
+    newPosition[0] = doodlerPosition[0] ;
+    newPosition[1] = doodlerPosition[1]+1;
     checkChange(lastPosition,newPosition);
   }
   else if (moveDirecrion == -1) {
-    newPosition = {doodlerPosition[0] , doodlerPosition[1]-1};
+
+	    newPosition[0] = doodlerPosition[0] ;
+	    newPosition[1] = doodlerPosition[1]-1;
     checkChange(lastPosition,newPosition);
   }
 }
@@ -340,7 +331,20 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  createChar(DOODLER_NUM, doodler);
+  createChar(STAIR_NUM, stair);
+  createChar(BROKEN_STAIR_NUM, brokenStair);
+  createChar(COIL_NUM, coil);
+  createChar(HOLE_NUM, hole);
+  createChar(MONSTER_NUM, monster);
 
+  setCursor(0, 0);
+  write(DOODLER_NUM);
+  write(STAIR_NUM);
+  write(BROKEN_STAIR_NUM);
+  write(COIL_NUM);
+  write(HOLE_NUM);
+  write(MONSTER_NUM);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -362,6 +366,7 @@ int main(void)
   //  bool x = false;
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   LiquidCrystal(GPIOD, GPIO_PIN_0, 0, GPIO_PIN_1, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7);
+  begin(20, 4);
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
   //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
