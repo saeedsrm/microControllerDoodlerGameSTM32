@@ -72,9 +72,6 @@ static void MX_TIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-
-
 typedef unsigned char byte;
 //int stair=1;
 //int doodler=2;
@@ -84,125 +81,245 @@ typedef unsigned char byte;
 //int monster=6;
 
 byte doodler[] = {
-  0x00,
-  0x04,
-  0x15,
-  0x0F,
-  0x15,
-  0x04,
-  0x00,
-  0x00
-};
+    0x00,
+    0x04,
+    0x15,
+    0x0F,
+    0x15,
+    0x04,
+    0x00,
+    0x00};
 
 byte stair[] = {
-  0x06,
-  0x06,
-  0x06,
-  0x06,
-  0x06,
-  0x06,
-  0x06,
-  0x06
-};
+    0x06,
+    0x06,
+    0x06,
+    0x06,
+    0x06,
+    0x06,
+    0x06,
+    0x06};
 
 byte brokenStair[] = {
-  0x06,
-  0x06,
-  0x06,
-  0x00,
-  0x00,
-  0x06,
-  0x06,
-  0x06
-};
+    0x06,
+    0x06,
+    0x06,
+    0x00,
+    0x00,
+    0x06,
+    0x06,
+    0x06};
 
 byte coil[] = {
-  0x00,
-  0x00,
-  0x1F,
-  0x15,
-  0x15,
-  0x1F,
-  0x00,
-  0x00
-};
+    0x00,
+    0x00,
+    0x1F,
+    0x15,
+    0x15,
+    0x1F,
+    0x00,
+    0x00};
 
 byte hole[] = {
-  0x00,
-  0x1F,
-  0x10,
-  0x10,
-  0x10,
-  0x10,
-  0x1F,
-  0x00
-};
+    0x00,
+    0x1F,
+    0x10,
+    0x10,
+    0x10,
+    0x10,
+    0x1F,
+    0x00};
 
 byte monster[] = {
-  0x0A,
-  0x04,
-  0x0E,
-  0x0A,
-  0x0A,
-  0x0E,
-  0x04,
-  0x0A
-};
+    0x0A,
+    0x04,
+    0x0E,
+    0x0A,
+    0x0A,
+    0x0E,
+    0x04,
+    0x0A};
+
+begin(20, 4);
+
+int board[4][20];
+int doodlerState = 1;
+int score = 0;
+int difficulty = 0;
+
+int doodlerPosition[2] = {0, 0};
+
+int doodlerDisplacementCount = 1;
+int EMPTY_CELL_NUM = -1;
+int DOODLER_NUM = 0;
+int STAIR_NUM = 1;
+int BROKEN_STAIR_NUM = 2;
+int COIL_NUM = 3;
+int HOLE_NUM =4 ;
+int MONSTER_NUM = 5;
+
+int REMOVE = 0;
+int MOVE = 1;
+int WRITE = 2;
+
+createChar(DOODLER_NUM, doodler);
+createChar(STAIR_NUM, stair);
+createChar(BROKEN_STAIR_NUM, brokenStair);
+createChar(COIL_NUM, coil);
+createChar(HOLE_NUM, hole);
+createChar(MONSTER_NUM, monster);
+
+setCursor(0, 0);
+write(DOODLER_NUM);
+write(STAIR_NUM);
+write(BROKEN_STAIR_NUM);
+write(COIL_NUM);
+write(HOLE_NUM);
+write(MONSTER_NUM);
 
 uint32_t value = 0;
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-//	if(hadc->Instance == ADC1)
-//	{
-		value = HAL_ADC_GetValue(hadc);
-		HAL_ADC_Start_IT(&hadc1);
-//	}
-}
-int  board[20][4];
-int doodlerState=1;
-int score=0;
-int difficulty=0;
-
-void printFirstPage(){
-
-}
-void checkChange(){
-
-}
-void moveDoodler(){
-
-}
-void printChangeBoard(){
-
-}
-void genarateBoard(){
-
-}
-void pageUp(){
-
-}
-void getPosionDoodler(){
-
+  //	if(hadc->Instance == ADC1)
+  //	{
+  value = HAL_ADC_GetValue(hadc);
+  HAL_ADC_Start_IT(&hadc1);
+  //	}
 }
 
+void printFirstPage(){}
+
+void crashEmptyCell(int[] lastPosition, int[] newPosition){
+  setCursor(lastPosition[0], lastPosition[1]);
+  printf(" ");
+  setCursor(newPosition[0], newPosition[1]);
+  write(DOODLER_NUM);
+  doodlerPosition[1] =  newPosition[1];
+  changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
+}
+
+void crashStair(int[] lastPosition, int[] newPosition){
+  doodlerDisplacementCount = 1;
+  pageUp();
+}
+
+void crashBrokenStair(int[] lastPosition, int[] newPosition){
+  setCursor(lastPosition[0], lastPosition[1]);
+  printf(" ");
+  setCursor(newPosition[0], newPosition[1]);
+  printf(" ");
+  write(DOODLER_NUM);
+  doodlerPosition[1] =  newPosition[1];
+  changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
+}
+
+void crashCoil(int[] lastPosition, int[] newPosition){
+
+}
+
+void crashHole(int[] lastPosition, int[] newPosition){
+
+}
+
+void crashMonster(int[] lastPosition, int[] newPosition){
+
+}
+
+void gameOver(){
+
+}
+
+void checkChange(int[] lastPosition, int[] newPosition){
+  if(newPosition[1] == -1){
+    gameOver();
+  }
+  else{
+    switch( board[newPosition[0]][newPosition[1]] ){
+      case EMPTY_CELL_NUM: {
+        crashEmptyCell(lastPosition,newPosition);
+        break;
+      } case STAIR_NUM: {
+        crashStair(lastPosition,newPosition);
+        break;
+      } case BROKEN_STAIR_NUM :{
+        crashBrokenStair(lastPosition,newPosition);
+        break;
+      } case COIL_NUM : {
+        crashCoil(lastPosition,newPosition);
+        break;
+      } case HOLE_NUM : {
+        crashHole(lastPosition,newPosition);
+        break;
+      } case MONSTER_NUM : {
+        crashMonster(lastPosition,newPosition);
+        break;
+      }
+    }
+  }
+}
+
+void changeBoard(int[] lastPosition, int[] curPosotion,int charNum , int moveOrRemoveOrWrite){
+  if(moveOrRemoveOrWrite == MOVE){
+    board[lastPosition[0]][lastPosition[1]] = -1;
+    board[curPosotion[0]][curPosotion[1]] = charNum;
+  } else if(moveOrRemoveOrWrite == REMOVE){
+    board[lastPosition[0]][lastPosition[1]] = -1;
+  } else if(moveOrRemoveOrWrite == WRITE){
+    board[curPosotion[0]][curPosotion[1]] = charNum;
+  }
+}
+
+void changeDoodlerPosition(int moveDirecrion) {
+  int [2] lastPosition = {doodlerPosition[0] , doodlerPosition[1]}
+  int [2] newPosition;
+  if (moveDirecrion == 1) {
+    doodlerDisplacementCount += 1;
+    if (doodlerDisplacementCount == 8) {
+      doodlerDisplacementCount = -1;
+    }
+    newPosition = {doodlerPosition[0] , doodlerPosition[1]+1};
+    checkChange(lastPosition,newPosition);
+  }
+  else if (moveDirecrion == -1) {
+    newPosition = {doodlerPosition[0] , doodlerPosition[1]-1};
+    checkChange(lastPosition,newPosition);
+  }
+}
+
+void moveDoodler() {
+  if (doodlerDisplacementCount >= 1) {
+    changeDoodlerPosition(1);
+  }
+  else {
+    changeDoodlerPosition(-1);
+  }
+}
+
+void printChangeBoard() {
+}
+void genarateBoard() {
+}
+void pageUp() {
+}
+void getPosionDoodler() {
+}
 
 bool stopFlag = true;
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim->Instance == TIM3)    // TIM3 for controlling the buzzer
-	{
-		moveDoodler();
-//		if(stopFlag)
-//		{
-//			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
-//			stopFlag = false;
-//		}
-//		else
-//		{
-//			HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-//			stopFlag = true;
-//		}
-	}
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM3) // TIM3 for controlling the buzzer
+  {
+    moveDoodler();
+    //		if(stopFlag)
+    //		{
+    //			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
+    //			stopFlag = false;
+    //		}
+    //		else
+    //		{
+    //			HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    //			stopFlag = true;
+    //		}
+  }
 }
 
 /* USER CODE END 0 */
@@ -242,29 +359,12 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-//  bool x = false;
+  //  bool x = false;
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   LiquidCrystal(GPIOD, GPIO_PIN_0, 0, GPIO_PIN_1, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7);
-  begin(20, 4);
-  createChar(0,doodler);
-  createChar(1,stair);
-  createChar(2,brokenStair);
-  createChar(3,coil);
-  createChar(4,hole);
-  createChar(5,monster);
-
-
-  setCursor(0, 0);
-  write(0);
-  write(1);
-  write(2);
-  write(3);
-  write(4);
-  write(5);
-
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
-//  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+  //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 
   htim2.Instance->CCR3 = 50;
 
@@ -296,7 +396,7 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
@@ -310,8 +410,7 @@ void SystemClock_Config(void)
   }
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -321,8 +420,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_I2C1
-                              |RCC_PERIPHCLK_ADC12;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB | RCC_PERIPHCLK_I2C1 | RCC_PERIPHCLK_ADC12;
   PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.USBClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
@@ -392,7 +490,6 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
-
 }
 
 /**
@@ -438,7 +535,6 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
@@ -478,7 +574,6 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
-
 }
 
 /**
@@ -500,9 +595,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 72-1;
+  htim2.Init.Prescaler = 72 - 1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1000-1;
+  htim2.Init.Period = 1000 - 1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -527,7 +622,6 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
-
 }
 
 /**
@@ -549,9 +643,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 7200-1;
+  htim3.Init.Prescaler = 7200 - 1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 10000-1;
+  htim3.Init.Period = 10000 - 1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -572,7 +666,6 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
-
 }
 
 /**
@@ -603,7 +696,6 @@ static void MX_USB_PCD_Init(void)
   /* USER CODE BEGIN USB_Init 2 */
 
   /* USER CODE END USB_Init 2 */
-
 }
 
 /**
@@ -624,18 +716,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin|LD4_Pin|LD3_Pin|LD5_Pin
-                          |LD7_Pin|LD9_Pin|LD10_Pin|LD8_Pin
-                          |LD6_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin | LD4_Pin | LD3_Pin | LD5_Pin | LD7_Pin | LD9_Pin | LD10_Pin | LD8_Pin | LD6_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : DRDY_Pin MEMS_INT3_Pin MEMS_INT4_Pin MEMS_INT1_Pin
                            MEMS_INT2_Pin */
-  GPIO_InitStruct.Pin = DRDY_Pin|MEMS_INT3_Pin|MEMS_INT4_Pin|MEMS_INT1_Pin
-                          |MEMS_INT2_Pin;
+  GPIO_InitStruct.Pin = DRDY_Pin | MEMS_INT3_Pin | MEMS_INT4_Pin | MEMS_INT1_Pin | MEMS_INT2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -643,9 +731,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : CS_I2C_SPI_Pin LD4_Pin LD3_Pin LD5_Pin
                            LD7_Pin LD9_Pin LD10_Pin LD8_Pin
                            LD6_Pin */
-  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin|LD4_Pin|LD3_Pin|LD5_Pin
-                          |LD7_Pin|LD9_Pin|LD10_Pin|LD8_Pin
-                          |LD6_Pin;
+  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin | LD4_Pin | LD3_Pin | LD5_Pin | LD7_Pin | LD9_Pin | LD10_Pin | LD8_Pin | LD6_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -659,13 +745,11 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PD0 PD1 PD4 PD5
                            PD6 PD7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
@@ -687,7 +771,7 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
