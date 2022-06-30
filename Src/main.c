@@ -141,16 +141,17 @@ byte monster[] = {
     0x0A
 };
 
-
-
 int board[4][20];
 int doodlerState = 1;
 int score = 0;
 int difficulty = 0;
-
 int doodlerPosition[2] = {0, 0};
-
 int doodlerDisplacementCount = 1;
+int downStatus = 0;
+int upStatus = 3;
+int lastPosition [2];
+int newPosition [2];
+
 int EMPTY_CELL_NUM = -1;
 int DOODLER_NUM = 0;
 int STAIR_NUM = 1;
@@ -158,11 +159,13 @@ int BROKEN_STAIR_NUM = 2;
 int COIL_NUM = 3;
 int HOLE_NUM =4 ;
 int MONSTER_NUM = 5;
-
 int REMOVE = 0;
 int MOVE = 1;
 int WRITE = 2;
-
+int NORMAL_DOWN_STATUS = 0;
+int MONSTER_DOWN_STATUS = 1;
+int NORMAL_UP_STATUS = 3;
+int COIL_UP_STATUS = 4;
 
 
 uint32_t value = 0;
@@ -177,7 +180,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void printFirstPage(){}
 
-void crashEmptyCell(int lastPosition [], int newPosition []){
+void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
   printf(" ");
   setCursor(newPosition[0], newPosition[1]);
@@ -186,12 +189,12 @@ void crashEmptyCell(int lastPosition [], int newPosition []){
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
-void crashStair(int lastPosition [], int newPosition []){
+void crashStair(){
   doodlerDisplacementCount = 1;
   pageUp();
 }
 
-void crashBrokenStair(int lastPosition [], int newPosition []){
+void crashBrokenStair(){
   setCursor(lastPosition[0], lastPosition[1]);
   printf(" ");
   setCursor(newPosition[0], newPosition[1]);
@@ -201,45 +204,48 @@ void crashBrokenStair(int lastPosition [], int newPosition []){
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
-void crashCoil(int lastPosition [], int newPosition []){
-
+void crashCoil(){
+  doodlerDisplacementCount = 1;
+  upStatus = COIL_UP_STATUS;
+  pageUp();
 }
 
-void crashHole(int lastPosition [], int newPosition []){
-
+void crashHole(){
+  gameOver()
 }
 
-void crashMonster(int lastPosition [], int newPosition []){
-
+void crashMonster(){
+  doodlerDisplacementCount = -1;
+  downStatus = MONSTER_DOWN_STATUS;
 }
 
 void gameOver(){
 
 }
 
-void checkChange(int lastPosition [], int newPosition []){
+void checkChange(){
   if(newPosition[1] == -1){
     gameOver();
   }
   else{
     switch( board[newPosition[0]][newPosition[1]] ){
       case EMPTY_CELL_NUM: {
-        crashEmptyCell(lastPosition,newPosition);
+        crashEmptyCell();
         break;
       } case STAIR_NUM: {
-        crashStair(lastPosition,newPosition);
+        crashStair();
         break;
       } case BROKEN_STAIR_NUM :{
-        crashBrokenStair(lastPosition,newPosition);
+        crashBrokenStair();
         break;
       } case COIL_NUM : {
-        crashCoil(lastPosition,newPosition);
+        crashCoil();
         break;
       } case HOLE_NUM : {
-        crashHole(lastPosition,newPosition);
+        crashHole();
         break;
       } case MONSTER_NUM : {
-        crashMonster(lastPosition,newPosition);
+        crashMonster();
         break;
       }
     }
@@ -257,23 +263,64 @@ void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveO
   }
 }
 
+void setLastAndNewPosition(int moveDirecrion){
+  lastPosition[0] = doodlerPosition[0];
+  lastPosition[1] = doodlerPosition[1];
+  newPosition[0] = doodlerPosition[0] ;
+  newPosition[1] = doodlerPosition[1]+moveDirecrion;
+}
+
+void moveUp(int countMoveUP){
+  setLastAndNewPosition(1);
+  doodlerDisplacementCount += 1;
+  if (doodlerDisplacementCount == countMoveUP) {
+    doodlerDisplacementCount = -1;
+  }
+  checkChange(lastPosition,newPosition);
+}
+
+void normalMoveDown(){
+  setLastAndNewPosition(-1);
+  checkChange(lastPosition,newPosition);
+}
+
+void crashMonsterMoveDown(){
+  setLastAndNewPosition(-1);
+  if(newPosition[1] < 0){
+    gameOver()
+  } else{
+    setCursor(lastPosition[0], lastPosition[1]);
+    printf(" ");
+    setCursor(newPosition[0], newPosition[1]);
+    printf(" ");
+    write(DOODLER_NUM);
+    doodlerPosition[1] =  newPosition[1];
+  }
+}
+
 void changeDoodlerPosition(int moveDirecrion) {
-  int lastPosition [2] = {doodlerPosition[0] , doodlerPosition[1]};
-  int newPosition [2] ;
   if (moveDirecrion == 1) {
-    doodlerDisplacementCount += 1;
-    if (doodlerDisplacementCount == 8) {
-      doodlerDisplacementCount = -1;
+    switch (upStatus){
+      case NORMAL_UP_STATUS:{
+        moveUp(8);
+        break;
+      } case COIL_UP_STATUS : {
+        moveUp(16);
+        break;
+      }
     }
-    newPosition[0] = doodlerPosition[0] ;
-    newPosition[1] = doodlerPosition[1]+1;
-    checkChange(lastPosition,newPosition);
   }
   else if (moveDirecrion == -1) {
-
-	    newPosition[0] = doodlerPosition[0] ;
-	    newPosition[1] = doodlerPosition[1]-1;
-    checkChange(lastPosition,newPosition);
+    switch(downStatus){
+      case NORMAL_DOWN_STATUS: {
+        normalMoveDown();
+        break;
+      }
+      case MONSTER_DOWN_STATUS: {
+        crashMonsterMoveDown();
+        break;
+      }
+    }
   }
 }
 
@@ -286,13 +333,9 @@ void moveDoodler() {
   }
 }
 
-void printChangeBoard() {
-}
 void genarateBoard() {
 }
 void pageUp() {
-}
-void getPosionDoodler() {
 }
 
 bool stopFlag = true;
