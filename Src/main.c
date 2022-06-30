@@ -193,17 +193,13 @@ void initialCharactorToBoard(int charCount, int charNum){
   }
 }
 
-bool validateInitializeBoard(){
+bool validateInitializeBoard(){}
 
-}
+void pageUp() {}
 
-void pageUp() {
+void updateScore(){}
 
-}
-
-void updateScore(){
-
-}
+int getRandom(int maxNum){}
 
 void genarateBoard() {
   int stairCount;
@@ -243,8 +239,6 @@ void genarateBoard() {
     }
   }
 }
-
-int getRandom(int maxNum){}
 
 void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
