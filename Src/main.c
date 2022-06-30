@@ -179,7 +179,21 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   //	}
 }
 
-void genarateBoard() {
+void initialCharactorToBoard(int charCount, int charNum){
+  for(int i = 0; i< charCount ; i++){
+    int sw = 1;
+    while(sw){
+      int row = getRandom(19);
+      int cell = getRandom(3);
+      if(board[cell][row] != charNum){
+        board[cell][row] = charNum;
+        sw = 0;
+      }
+    }
+  }
+}
+
+bool validateInitializeBoard(){
 
 }
 
@@ -190,6 +204,47 @@ void pageUp() {
 void updateScore(){
 
 }
+
+void genarateBoard() {
+  int stairCount;
+  int brokenStairCount;
+  int holeCount;
+  int monsterCount;
+  int coilCount;
+
+  int stairDificaltyScore = 5;
+  int brokenStairDificultyScore = -3;
+  int holeDificultyScore = -30;
+  int coilDificultyScore = 8;
+  int monsterDificultyScore = -30;
+
+  while(1){
+    stairCount = getRandom(difficulty);
+    brokenStairDificultyScore = getRandom(difficulty);
+    holeDificultyScore = getRandom(difficulty);
+    coilDificultyScore = = getRandom(difficulty);
+    monsterDificultyScore = getRandom(difficulty);
+
+    int difficultyScore = stairCount * stairDificaltyScore +
+    brokenStairCount * brokenStairDificultyScore +
+    holeCount * holeDificultyScore +
+    coilCount * coilDificultyScore +
+    monsterCount * monsterDificultyScore;
+
+    if(difficultyScore < difficulty *(-10)){
+      initialCharactorToBoard(stairCount,STAIR_NUM);
+      initialCharactorToBoard(brokenStairCount,BROKEN_STAIR_NUM);
+      initialCharactorToBoard(holeCount,HOLE_NUM);
+      initialCharactorToBoard(coilCount,COIL_NUM);
+      initialCharactorToBoard(monsterCount,MONSTER_NUM);
+      if(validateInitializeBoard()){
+        break;
+      }
+    }
+  }
+}
+
+int getRandom(int maxNum){}
 
 void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
