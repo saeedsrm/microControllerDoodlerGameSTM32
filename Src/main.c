@@ -145,7 +145,7 @@ byte monster[] = {
 
 int board[4][20];
 int score = 0;
-int difficulty = 1;
+int difficulty = 4;
 int doodlerPosition[2] = {0, 0};
 int doodlerDisplacementCount = 1;
 int downStatus = 0;
@@ -153,20 +153,20 @@ int upStatus = 3;
 int lastPosition [2];
 int newPosition [2];
 
-int EMPTY_CELL_NUM = -1;
-int DOODLER_NUM = 0;
-int STAIR_NUM = 1;
-int BROKEN_STAIR_NUM = 2;
-int COIL_NUM = 3;
-int HOLE_NUM =4 ;
-int MONSTER_NUM = 5;
-int REMOVE = 0;
-int MOVE = 1;
-int WRITE = 2;
-int NORMAL_DOWN_STATUS = 0;
-int MONSTER_DOWN_STATUS = 1;
-int NORMAL_UP_STATUS = 7;
-int COIL_UP_STATUS = 15;
+#define EMPTY_CELL_NUM  -1
+#define DOODLER_NUM  0
+#define STAIR_NUM  1
+#define BROKEN_STAIR_NUM  2
+#define COIL_NUM  3
+#define HOLE_NUM 4
+#define MONSTER_NUM  5
+#define REMOVE  0
+#define MOVE  1
+#define WRITE  2
+#define NORMAL_DOWN_STATUS  0
+#define MONSTER_DOWN_STATUS  1
+#define NORMAL_UP_STATUS 7
+#define COIL_UP_STATUS  15
 
 int x=1234;
 int y=1;
@@ -205,7 +205,7 @@ uint8_t Get_Pressed_Row(uint16_t GPIO_Pin)
 		return 2;
 	}
 	Rows_Set_Mode(0);
-	HAL_GPIO_WritePin(GPIO15, GPIO_PIN_15, 1);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, 1);
 	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
 		Rows_Set_Mode(1);
 		return 3;
@@ -334,7 +334,7 @@ void pageUp(){
         if(board[i][j] != -1){
           board[i][j] = -1;
           setCursor(i,j);
-          printf(" ");
+          print(" ");
         }
       }
     }
@@ -346,7 +346,7 @@ void pageUp(){
             doodlerPosition[1] = j;
           }
           setCursor(i,j);
-          printf(" ");
+          print(" ");
           setCursor(i-newPosition[1],j);
           write(board[i][j]);
           board[i-newPosition[1]][j]=board[i][j];
@@ -424,7 +424,7 @@ void genarateBoard(int blankRow) {
 
 void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
-  printf(" ");
+  print(" ");
   setCursor(newPosition[0], newPosition[1]);
   write(DOODLER_NUM);
   doodlerPosition[1] =  newPosition[1];
@@ -438,9 +438,9 @@ void crashStair(){
 
 void crashBrokenStair(){
   setCursor(lastPosition[0], lastPosition[1]);
-  printf(" ");
+  print(" ");
   setCursor(newPosition[0], newPosition[1]);
-  printf(" ");
+  print(" ");
   write(DOODLER_NUM);
   doodlerPosition[1] =  newPosition[1];
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
@@ -463,20 +463,13 @@ void crashMonster(){
 }
 
 void gameOver(){
-  for(int i = 0; i<=19; i++){
-    for(int j=0; j < 3; j++){
-      if(board[i][j] != -1){
-        setCursor(i,j);
-        printf(" ");
-      }
-    }
-  }
+  clear();
   setCursor(12,0);
-  printf("game");
-  setCursor(11,0);
-  printf("over");
+  print("game");
+  setCursor(11,1);
+  print("over");
   setCursor(8,0);
-  printf("%s",score);
+//  print("%s",score);
 }
 
 void checkChange(){
@@ -546,9 +539,9 @@ void crashMonsterMoveDown(){
     gameOver();
   } else{
     setCursor(lastPosition[0], lastPosition[1]);
-    printf(" ");
+    print(" ");
     setCursor(newPosition[0], newPosition[1]);
-    printf(" ");
+    print(" ");
     write(DOODLER_NUM);
     doodlerPosition[1] =  newPosition[1];
     changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
@@ -561,7 +554,7 @@ void changeDoodlerPosition(int moveDirecrion) {
       case NORMAL_UP_STATUS:{
         moveUp(8);
         break;
-      } case COIL_UP_STATUS : {
+      }case COIL_UP_STATUS : {
         moveUp(16);
         break;
       }
@@ -594,7 +587,7 @@ bool stopFlag = true;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM3) // TIM3 for controlling the buzzer
   {
-    moveDoodler();
+//    moveDoodler();
     //		if(stopFlag)
     //		{
     //			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
@@ -632,7 +625,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	  numberToBCD(y%10);
 	  y=y/10;
 	  HAL_Delay(5);
-	  m++;
    }
 }
 
@@ -654,13 +646,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  createChar(DOODLER_NUM, doodler);
-  createChar(STAIR_NUM, stair);
-  createChar(BROKEN_STAIR_NUM, brokenStair);
-  createChar(COIL_NUM, coil);
-  createChar(HOLE_NUM, hole);
-  createChar(MONSTER_NUM, monster);
-  genarateBoard(20);
+
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -686,6 +673,16 @@ int main(void)
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   LiquidCrystal(GPIOD, GPIO_PIN_0, 0, GPIO_PIN_1, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7);
   begin(20, 4);
+  createChar(DOODLER_NUM, doodler);
+  createChar(STAIR_NUM, stair);
+  createChar(BROKEN_STAIR_NUM, brokenStair);
+  createChar(COIL_NUM, coil);
+  createChar(HOLE_NUM, hole);
+  createChar(MONSTER_NUM, monster);
+
+  setCursor(0, 0);
+//  write(DOODLER_NUM);
+//  print("saeed");
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
   //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
@@ -694,6 +691,8 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
 
+//  genarateBoard(20);
+  gameOver();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -1215,7 +1214,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+     ex: print("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
