@@ -177,14 +177,14 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   //	}
 }
 
-void initialCharactorToBoard(int charCount, int charNum){
-  for(int i = 0; i< charCount ; i++){
+void initialCharactorToBoard(int charCount, int charNum, int blankRow){
+  for(int i = 0; i < charCount; i++){
     int sw = 1;
     while(sw){
-      int row = getRandom(19);
+      int row = getRandom(blankRow);
       int cell = getRandom(3);
-      if(board[cell][row] != charNum){
-        board[cell][row] = charNum;
+      if(board[cell][19-blankRow] != charNum){
+        board[cell][19-blankRow] = charNum;
         sw = 0;
       }
     }
@@ -202,9 +202,9 @@ int checkStairInsideDoodler(int accessRowCount){
   else return 1;
 }
 
-bool validateInitializeBoard(){
+bool validateInitializeBoard(int blankRow){
   int sw = 1;
-  for(int i = 0; i<19 && sw==1; i++){
+  for(int i = 20-blankRow; i<20 && sw==1; i++){
     if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM &&
      board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
        sw = 0;
@@ -222,7 +222,34 @@ bool validateInitializeBoard(){
 }
 
 void pageUp(){
-
+  if(newPosition[1] != 0){
+    for(int i =0; i<newPosition[1];i++){
+      for(int j = 0; j<4;j++){
+        if(board[i][j] != -1){
+          board[i][j] = -1;
+          setCursor(i,j);
+          printf(" ");
+        }
+      }
+    }
+    for(int i=newPosition[1];i<20;i++){
+      for(int j =0 ; j<4; j++){
+        if(board[i][j] != -1){
+          if(board[i][j] == DOODLER_NUM){
+            doodlerPosition[0] = i-newPosition[1];
+            doodlerPosition[1] = j;
+          }
+          setCursor(i,j);
+          printf(" ");
+          setCursor(i-newPosition[1],j);
+          write(board[i][j]);
+          board[i-newPosition[1]][j]=board[i][j];
+          board[i][j] = -1;
+        }
+      }
+    }
+    genarateBoard(newPosition[1]);
+  } 
 }
 
 void updateScore(int upCount){
@@ -233,8 +260,19 @@ int getRandom(int maxNum){
   return maxNum;
 }
 
-void genarateBoard() {
-  
+void printBoard(int minRow){
+  for(int i = minRow; i< 20;i++){
+    for(int j = 0; j<4;j++){
+      if(board[i][j] != -1){
+        setCursor(i,j);
+        write(board[i][j]);
+      }
+    }
+  }
+}
+
+void genarateBoard(int blankRow) {
+  int randomMaxNum = difficulty * blankRow / 20;
   int stairCount;
   int brokenStairCount;
   int holeCount;
@@ -246,15 +284,17 @@ void genarateBoard() {
   int holeDificultyScore = -30;
   int coilDificultyScore = 8;
   int monsterDificultyScore = -30;
+
   board[2][0] = DOODLER_NUM;
   doodlerPosition[0] = 2;
   doodlerPosition[1] = 0;
+
   while(1){
-    stairCount = getRandom(difficulty);
-    brokenStairDificultyScore = getRandom(difficulty);
-    holeDificultyScore = getRandom(difficulty);
-    coilDificultyScore = = getRandom(difficulty);
-    monsterDificultyScore = getRandom(difficulty);
+    stairCount = getRandom(randomMaxNum);
+    brokenStairDificultyScore = getRandom(randomMaxNum);
+    holeDificultyScore = getRandom(randomMaxNum);
+    coilDificultyScore = = getRandom(randomMaxNum);
+    monsterDificultyScore = getRandom(randomMaxNum);
 
     int difficultyScore = stairCount * stairDificaltyScore +
     brokenStairCount * brokenStairDificultyScore +
@@ -262,13 +302,14 @@ void genarateBoard() {
     coilCount * coilDificultyScore +
     monsterCount * monsterDificultyScore;
 
-    if(difficultyScore < difficulty *(-10)){
-      initialCharactorToBoard(stairCount,STAIR_NUM);
-      initialCharactorToBoard(brokenStairCount,BROKEN_STAIR_NUM);
-      initialCharactorToBoard(holeCount,HOLE_NUM);
-      initialCharactorToBoard(coilCount,COIL_NUM);
-      initialCharactorToBoard(monsterCount,MONSTER_NUM);
-      if(validateInitializeBoard()){
+    if(difficultyScore < randomMaxNum *(-10)){
+      initialCharactorToBoard(stairCount,STAIR_NUM,blankRow);
+      initialCharactorToBoard(brokenStairCount,BROKEN_STAIR_NUM,blankRow);
+      initialCharactorToBoard(holeCount,HOLE_NUM,blankRow);
+      initialCharactorToBoard(coilCount,COIL_NUM,blankRow);
+      initialCharactorToBoard(monsterCount,MONSTER_NUM,blankRow);
+      if(validateInitializeBoard(blankRow)){
+        printBoard(20-blankRow);
         break;
       }
     }
