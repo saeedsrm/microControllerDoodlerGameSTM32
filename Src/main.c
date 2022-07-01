@@ -143,16 +143,16 @@ byte monster[] = {
     0x0A
 };
 
-
-
 int board[4][20];
-int doodlerState = 1;
 int score = 0;
-int difficulty = 0;
-
+int difficulty = 1;
 int doodlerPosition[2] = {0, 0};
-
 int doodlerDisplacementCount = 1;
+int downStatus = 0;
+int upStatus = 3;
+int lastPosition [2];
+int newPosition [2];
+
 int EMPTY_CELL_NUM = -1;
 int DOODLER_NUM = 0;
 int STAIR_NUM = 1;
@@ -160,11 +160,13 @@ int BROKEN_STAIR_NUM = 2;
 int COIL_NUM = 3;
 int HOLE_NUM =4 ;
 int MONSTER_NUM = 5;
-
 int REMOVE = 0;
 int MOVE = 1;
 int WRITE = 2;
-
+int NORMAL_DOWN_STATUS = 0;
+int MONSTER_DOWN_STATUS = 1;
+int NORMAL_UP_STATUS = 7;
+int COIL_UP_STATUS = 15;
 
 int x=1234;
 int y=1;
@@ -269,11 +271,6 @@ void numberToBCD(int i){
 
 
 
-
-
-
-
-
 ////////////////////////// end 7 segment//////////////////
 
 uint32_t value = 0;
@@ -286,9 +283,146 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   //	}
 }
 
-void printFirstPage(){}
+void initialCharactorToBoard(int charCount, int charNum, int blankRow){
+  for(int i = 0; i < charCount; i++){
+    int sw = 1;
+    while(sw){
+      int row = getRandom(blankRow);
+      int cell = getRandom(3);
+      if(board[cell][19-blankRow] != charNum){
+        board[cell][19-blankRow] = charNum;
+        sw = 0;
+      }
+    }
+  }
+}
 
-void crashEmptyCell(int lastPosition [], int newPosition []){
+int checkStairInsideDoodler(int accessRowCount){
+  int sw = 1;
+  for(int i = doodlerPosition[1];i<doodlerPosition[1] + accessRowCount && sw ==1;i++){
+    for(int j = 0; j<4 && sw==1 ;j++){
+      if(board[i][j]==STAIR_NUM) sw=0;
+    }
+  }
+  if(sw==1) return 0;
+  else return 1;
+}
+
+bool validateInitializeBoard(int blankRow){
+  int sw = 1;
+  for(int i = 20-blankRow; i<20 && sw==1; i++){
+    if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM &&
+     board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
+       sw = 0;
+     }
+     else if(board[i][0]==MONSTER_NUM && board[i][1]==MONSTER_NUM &&
+     board[i][2]==MONSTER_NUM && board[i][3]==MONSTER_NUM ){
+       sw = 0;
+     }
+  }
+  if(sw == 1){
+    sw = checkStairInsideDoodler(upStatus);
+  }
+  if(sw == 1) return true;
+  else return false;
+}
+
+void pageUp(){
+  if(newPosition[1] != 0){
+    for(int i =0; i<newPosition[1];i++){
+      for(int j = 0; j<4;j++){
+        if(board[i][j] != -1){
+          board[i][j] = -1;
+          setCursor(i,j);
+          printf(" ");
+        }
+      }
+    }
+    for(int i=newPosition[1];i<20;i++){
+      for(int j =0 ; j<4; j++){
+        if(board[i][j] != -1){
+          if(board[i][j] == DOODLER_NUM){
+            doodlerPosition[0] = i-newPosition[1];
+            doodlerPosition[1] = j;
+          }
+          setCursor(i,j);
+          printf(" ");
+          setCursor(i-newPosition[1],j);
+          write(board[i][j]);
+          board[i-newPosition[1]][j]=board[i][j];
+          board[i][j] = -1;
+        }
+      }
+    }
+    genarateBoard(newPosition[1]);
+  }
+}
+
+void updateScore(int upCount){
+  score += upCount;
+}
+
+int getRandom(int maxNum){
+  return maxNum;
+}
+
+void printBoard(int minRow){
+  for(int i = minRow; i< 20;i++){
+    for(int j = 0; j<4;j++){
+      if(board[i][j] != -1){
+        setCursor(i,j);
+        write(board[i][j]);
+      }
+    }
+  }
+}
+
+void genarateBoard(int blankRow) {
+  int randomMaxNum = difficulty * blankRow / 20;
+  int stairCount;
+  int brokenStairCount;
+  int holeCount;
+  int monsterCount;
+  int coilCount;
+
+  int stairDificaltyScore = 5;
+  int brokenStairDificultyScore = -3;
+  int holeDificultyScore = -30;
+  int coilDificultyScore = 8;
+  int monsterDificultyScore = -30;
+
+  board[2][0] = DOODLER_NUM;
+  doodlerPosition[0] = 2;
+  doodlerPosition[1] = 0;
+
+  while(1){
+    stairCount = getRandom(randomMaxNum);
+    brokenStairDificultyScore = getRandom(randomMaxNum);
+    holeDificultyScore = getRandom(randomMaxNum);
+    coilDificultyScore = getRandom(randomMaxNum);
+    monsterDificultyScore = getRandom(randomMaxNum);
+
+    int difficultyScore = stairCount * stairDificaltyScore +
+    brokenStairCount * brokenStairDificultyScore +
+    holeCount * holeDificultyScore +
+    coilCount * coilDificultyScore +
+    monsterCount * monsterDificultyScore;
+
+    if(difficultyScore < randomMaxNum *(-10)){
+      initialCharactorToBoard(stairCount,STAIR_NUM,blankRow);
+      initialCharactorToBoard(brokenStairCount,BROKEN_STAIR_NUM,blankRow);
+      initialCharactorToBoard(holeCount,HOLE_NUM,blankRow);
+      initialCharactorToBoard(coilCount,COIL_NUM,blankRow);
+      initialCharactorToBoard(monsterCount,MONSTER_NUM,blankRow);
+      if(validateInitializeBoard(blankRow)){
+        printBoard(20-blankRow);
+        break;
+      }
+    }
+  }
+}
+
+void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
   printf(" ");
   setCursor(newPosition[0], newPosition[1]);
@@ -297,12 +431,12 @@ void crashEmptyCell(int lastPosition [], int newPosition []){
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
-void crashStair(int lastPosition [], int newPosition []){
+void crashStair(){
   doodlerDisplacementCount = 1;
   pageUp();
 }
 
-void crashBrokenStair(int lastPosition [], int newPosition []){
+void crashBrokenStair(){
   setCursor(lastPosition[0], lastPosition[1]);
   printf(" ");
   setCursor(newPosition[0], newPosition[1]);
@@ -312,45 +446,62 @@ void crashBrokenStair(int lastPosition [], int newPosition []){
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
-void crashCoil(int lastPosition [], int newPosition []){
-
+void crashCoil(){
+  doodlerDisplacementCount = 1;
+  upStatus = COIL_UP_STATUS;
+  pageUp();
 }
 
-void crashHole(int lastPosition [], int newPosition []){
-    gameOver();
+
+void crashHole(){
+  gameOver();
 }
 
-void crashMonster(int lastPosition [], int newPosition []){
-
+void crashMonster(){
+  doodlerDisplacementCount = -1;
+  downStatus = MONSTER_DOWN_STATUS;
 }
 
 void gameOver(){
-
+  for(int i = 0; i<=19; i++){
+    for(int j=0; j < 3; j++){
+      if(board[i][j] != -1){
+        setCursor(i,j);
+        printf(" ");
+      }
+    }
+  }
+  setCursor(12,0);
+  printf("game");
+  setCursor(11,0);
+  printf("over");
+  setCursor(8,0);
+  printf("%s",score);
 }
 
-void checkChange(int lastPosition [], int newPosition []){
+void checkChange(){
   if(newPosition[1] == -1){
     gameOver();
   }
   else{
     switch( board[newPosition[0]][newPosition[1]] ){
       case EMPTY_CELL_NUM: {
-        crashEmptyCell(lastPosition,newPosition);
+        crashEmptyCell();
         break;
       } case STAIR_NUM: {
-        crashStair(lastPosition,newPosition);
+        crashStair();
         break;
       } case BROKEN_STAIR_NUM :{
-        crashBrokenStair(lastPosition,newPosition);
+        crashBrokenStair();
         break;
       } case COIL_NUM : {
-        crashCoil(lastPosition,newPosition);
+        crashCoil();
         break;
       } case HOLE_NUM : {
-        crashHole(lastPosition,newPosition);
+        crashHole();
         break;
       } case MONSTER_NUM : {
-        crashMonster(lastPosition,newPosition);
+        crashMonster();
         break;
       }
     }
@@ -368,23 +519,65 @@ void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveO
   }
 }
 
+void setLastAndNewPosition(int moveDirecrion){
+  lastPosition[0] = doodlerPosition[0];
+  lastPosition[1] = doodlerPosition[1];
+  newPosition[0] = doodlerPosition[0] ;
+  newPosition[1] = doodlerPosition[1]+moveDirecrion;
+}
+
+void moveUp(int countMoveUP){
+  setLastAndNewPosition(1);
+  doodlerDisplacementCount += 1;
+  if (doodlerDisplacementCount == countMoveUP) {
+    doodlerDisplacementCount = -1;
+  }
+  checkChange(lastPosition,newPosition);
+}
+
+void normalMoveDown(){
+  setLastAndNewPosition(-1);
+  checkChange(lastPosition,newPosition);
+}
+
+void crashMonsterMoveDown(){
+  setLastAndNewPosition(-1);
+  if(newPosition[1] < 0){
+    gameOver();
+  } else{
+    setCursor(lastPosition[0], lastPosition[1]);
+    printf(" ");
+    setCursor(newPosition[0], newPosition[1]);
+    printf(" ");
+    write(DOODLER_NUM);
+    doodlerPosition[1] =  newPosition[1];
+    changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
+  }
+}
+
 void changeDoodlerPosition(int moveDirecrion) {
-  int lastPosition [2] = {doodlerPosition[0] , doodlerPosition[1]};
-  int newPosition [2] ;
   if (moveDirecrion == 1) {
-    doodlerDisplacementCount += 1;
-    if (doodlerDisplacementCount == 8) {
-      doodlerDisplacementCount = -1;
+    switch (upStatus){
+      case NORMAL_UP_STATUS:{
+        moveUp(8);
+        break;
+      } case COIL_UP_STATUS : {
+        moveUp(16);
+        break;
+      }
     }
-    newPosition[0] = doodlerPosition[0] ;
-    newPosition[1] = doodlerPosition[1]+1;
-    checkChange(lastPosition,newPosition);
   }
   else if (moveDirecrion == -1) {
-
-	    newPosition[0] = doodlerPosition[0] ;
-	    newPosition[1] = doodlerPosition[1]-1;
-    checkChange(lastPosition,newPosition);
+    switch(downStatus){
+      case NORMAL_DOWN_STATUS: {
+        normalMoveDown();
+        break;
+      }
+      case MONSTER_DOWN_STATUS: {
+        crashMonsterMoveDown();
+        break;
+      }
+    }
   }
 }
 
@@ -395,15 +588,6 @@ void moveDoodler() {
   else {
     changeDoodlerPosition(-1);
   }
-}
-
-void printChangeBoard() {
-}
-void genarateBoard() {
-}
-void pageUp() {
-}
-void getPosionDoodler() {
 }
 
 bool stopFlag = true;
@@ -476,14 +660,7 @@ int main(void)
   createChar(COIL_NUM, coil);
   createChar(HOLE_NUM, hole);
   createChar(MONSTER_NUM, monster);
-
-  setCursor(0, 0);
-  write(DOODLER_NUM);
-  write(STAIR_NUM);
-  write(BROKEN_STAIR_NUM);
-  write(COIL_NUM);
-  write(HOLE_NUM);
-  write(MONSTER_NUM);
+  genarateBoard(20);
   /* USER CODE END Init */
 
   /* Configure the system clock */
