@@ -462,13 +462,19 @@ void crashMonster(){
   downStatus = MONSTER_DOWN_STATUS;
 }
 
+void printStringOnLCD(char str[],int row, int col){
+  int size = sizeof str / sizeof str[0];
+  for(int i = 0; i < size ; i++){
+    setCursor(row,col+i);
+    print(str[i]);
+  }
+}
+
 void gameOver(){
   clear();
-  setCursor(12,0);
-  print("game");
-  setCursor(11,1);
-  print("over");
-  setCursor(8,0);
+  printStringOnLCD("game",12,0);
+  printStringOnLCD("over",10,0);
+  // setCursor(8,0);
 //  print("%s",score);
 }
 
