@@ -142,16 +142,14 @@ byte monster[] = {
 };
 
 int board[4][20];
-int doodlerState = 1;
 int score = 0;
-int difficulty = 0;
+int difficulty = 1;
 int doodlerPosition[2] = {0, 0};
 int doodlerDisplacementCount = 1;
 int downStatus = 0;
 int upStatus = 3;
 int lastPosition [2];
 int newPosition [2];
-int score = 0;
 
 int EMPTY_CELL_NUM = -1;
 int DOODLER_NUM = 0;
@@ -165,8 +163,8 @@ int MOVE = 1;
 int WRITE = 2;
 int NORMAL_DOWN_STATUS = 0;
 int MONSTER_DOWN_STATUS = 1;
-int NORMAL_UP_STATUS = 3;
-int COIL_UP_STATUS = 4;
+int NORMAL_UP_STATUS = 7;
+int COIL_UP_STATUS = 15;
 
 
 uint32_t value = 0;
@@ -193,15 +191,50 @@ void initialCharactorToBoard(int charCount, int charNum){
   }
 }
 
-bool validateInitializeBoard(){}
+int checkStairInsideDoodler(int accessRowCount){
+  int sw = 1;
+  for(int i = doodlerPosition[1];i<doodlerPosition[1] + accessRowCount && sw ==1;i++){
+    for(int j = 0; j<4 && sw==1 ;j++){
+      if(board[i][j]==STAIR_NUM) sw=0;
+    }
+  }
+  if(sw==1) return 0;
+  else return 1;
+}
 
-void pageUp() {}
+bool validateInitializeBoard(){
+  int sw = 1;
+  for(int i = 0; i<19 && sw==1; i++){
+    if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM &&
+     board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
+       sw = 0;
+     }
+     else if(board[i][0]==MONSTER_NUM && board[i][1]==MONSTER_NUM &&
+     board[i][2]==MONSTER_NUM && board[i][3]==MONSTER_NUM ){
+       sw = 0;
+     }
+  }
+  if(sw == 1){
+    sw = checkStairInsideDoodler(upStatus);
+  }
+  if(sw == 1) return true;
+  else return false;
+}
 
-void updateScore(){}
+void pageUp(){
 
-int getRandom(int maxNum){}
+}
+
+void updateScore(int upCount){
+  score += upCount;
+}
+
+int getRandom(int maxNum){
+  return maxNum;
+}
 
 void genarateBoard() {
+  
   int stairCount;
   int brokenStairCount;
   int holeCount;
@@ -213,7 +246,9 @@ void genarateBoard() {
   int holeDificultyScore = -30;
   int coilDificultyScore = 8;
   int monsterDificultyScore = -30;
-
+  board[2][0] = DOODLER_NUM;
+  doodlerPosition[0] = 2;
+  doodlerPosition[1] = 0;
   while(1){
     stairCount = getRandom(difficulty);
     brokenStairDificultyScore = getRandom(difficulty);
@@ -288,10 +323,12 @@ void gameOver(){
       }
     }
   }
-  setCursor(10,0);
+  setCursor(12,0);
   printf("game");
-  setCursor(8,0);
+  setCursor(11,0);
   printf("over");
+  setCursor(8,0);
+  printf("%s",score);
 }
 
 void checkChange(){
