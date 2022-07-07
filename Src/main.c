@@ -24,6 +24,8 @@
 /* USER CODE BEGIN Includes */
 #include "LiquidCrystal.h"
 #include <stdbool.h>
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,12 +77,6 @@ static void MX_TIM4_Init(void);
 /* USER CODE BEGIN 0 */
 
 typedef unsigned char byte;
-//int stair=1;
-//int doodler=2;
-//int brokenStair=3;
-//int coil=4;
-//int hole=5;
-//int monster=6;
 
 byte doodler[] = {
     0x00,
@@ -143,13 +139,13 @@ byte monster[] = {
     0x0A
 };
 
-int board[4][20];
+int board[20][4];
 int score = 0;
-int difficulty = 4;
+int difficulty = 5;
 int doodlerPosition[2] = {0, 0};
 int doodlerDisplacementCount = 1;
 int downStatus = 0;
-int upStatus = 3;
+int upStatus = 7;
 int lastPosition [2];
 int newPosition [2];
 
@@ -167,12 +163,21 @@ int newPosition [2];
 #define MONSTER_DOWN_STATUS  1
 #define NORMAL_UP_STATUS 7
 #define COIL_UP_STATUS  15
-
+char buffer[32];
 int x=1234;
 int y=1;
+
+void genarateBoard(int blankRow);
 /////////////////////////////kepad////////////////////
 uint32_t now = 0;
 
+void initBoard(){
+	for (int i=0;i<20;i++){
+		for (int j=0;j<4;j++){
+			board[i][j]=-1;
+		}
+	}
+}
 
 void Rows_Set_Mode(uint8_t mode)
 {
@@ -248,7 +253,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	Rows_Set_Mode(1);
 	now = HAL_GetTick();
-	//number
+	setCursor(0, 0);
+	sprintf(buffer,"%d",number);
+	print(buffer);
 }
 /////////////////////////////end keypad//////////////////
 
@@ -287,10 +294,10 @@ void initialCharactorToBoard(int charCount, int charNum, int blankRow){
   for(int i = 0; i < charCount; i++){
     int sw = 1;
     while(sw){
-      int row = getRandom(blankRow);
-      int cell = getRandom(3);
-      if(board[cell][19-blankRow] != charNum){
-        board[cell][19-blankRow] = charNum;
+      int row = getRandom(20);
+      int col = getRandom(4);
+      if(board[19-row][col] == -1){
+        board[19-row][col] = charNum;
         sw = 0;
       }
     }
@@ -299,7 +306,7 @@ void initialCharactorToBoard(int charCount, int charNum, int blankRow){
 
 int checkStairInsideDoodler(int accessRowCount){
   int sw = 1;
-  for(int i = doodlerPosition[1];i<doodlerPosition[1] + accessRowCount && sw ==1;i++){
+  for(int i = doodlerPosition[0];i<doodlerPosition[0] + accessRowCount && sw ==1;i++){
     for(int j = 0; j<4 && sw==1 ;j++){
       if(board[i][j]==STAIR_NUM) sw=0;
     }
@@ -311,12 +318,10 @@ int checkStairInsideDoodler(int accessRowCount){
 bool validateInitializeBoard(int blankRow){
   int sw = 1;
   for(int i = 20-blankRow; i<20 && sw==1; i++){
-    if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM &&
-     board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
+    if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM && board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
        sw = 0;
      }
-     else if(board[i][0]==MONSTER_NUM && board[i][1]==MONSTER_NUM &&
-     board[i][2]==MONSTER_NUM && board[i][3]==MONSTER_NUM ){
+     else if(board[i][0]==MONSTER_NUM && board[i][1]==MONSTER_NUM && board[i][2]==MONSTER_NUM && board[i][3]==MONSTER_NUM ){
        sw = 0;
      }
   }
@@ -328,9 +333,9 @@ bool validateInitializeBoard(int blankRow){
 }
 
 void pageUp(){
-  if(newPosition[1] != 0){
-    for(int i =0; i<newPosition[1];i++){
-      for(int j = 0; j<4;j++){
+  if(newPosition[0] != 0){
+    for(int i = 0; i < newPosition[0]; i++){
+      for(int j = 0; j < 4; j++){
         if(board[i][j] != -1){
           board[i][j] = -1;
           setCursor(i,j);
@@ -338,24 +343,22 @@ void pageUp(){
         }
       }
     }
-    for(int i=newPosition[1];i<20;i++){
+    for(int i=newPosition[0];i<20;i++){
       for(int j =0 ; j<4; j++){
-        if(board[i][j] != -1){
-          if(board[i][j] == DOODLER_NUM){
-            doodlerPosition[0] = i-newPosition[1];
-            doodlerPosition[1] = j;
-          }
+        if(board[i][j] != -1 && doodlerPosition[0] != i){
           setCursor(i,j);
           print(" ");
-          setCursor(i-newPosition[1],j);
+          setCursor(i-newPosition[0],j);
           write(board[i][j]);
-          board[i-newPosition[1]][j]=board[i][j];
+          board[i-newPosition[0]][j]=board[i][j];
           board[i][j] = -1;
         }
       }
     }
-    genarateBoard(newPosition[1]);
+    doodlerPosition[0] -= newPosition[0];
+    genarateBoard(newPosition[0]);
   }
+  updateScore(newPosition[0]);
 }
 
 void updateScore(int upCount){
@@ -363,7 +366,8 @@ void updateScore(int upCount){
 }
 
 int getRandom(int maxNum){
-  return maxNum;
+  int rand=HAL_GetTick() % maxNum;
+  return rand;
 }
 
 void printBoard(int minRow){
@@ -391,22 +395,15 @@ void genarateBoard(int blankRow) {
   int coilDificultyScore = 8;
   int monsterDificultyScore = -30;
 
-  board[2][0] = DOODLER_NUM;
-  doodlerPosition[0] = 2;
-  doodlerPosition[1] = 0;
 
   while(1){
     stairCount = getRandom(randomMaxNum);
-    brokenStairDificultyScore = getRandom(randomMaxNum);
-    holeDificultyScore = getRandom(randomMaxNum);
-    coilDificultyScore = getRandom(randomMaxNum);
-    monsterDificultyScore = getRandom(randomMaxNum);
+    brokenStairCount = getRandom(randomMaxNum);
+    holeCount = getRandom(randomMaxNum);
+    coilCount = getRandom(randomMaxNum);
+    monsterCount = getRandom(randomMaxNum);
 
-    int difficultyScore = stairCount * stairDificaltyScore +
-    brokenStairCount * brokenStairDificultyScore +
-    holeCount * holeDificultyScore +
-    coilCount * coilDificultyScore +
-    monsterCount * monsterDificultyScore;
+    int difficultyScore = stairCount * stairDificaltyScore + brokenStairCount * brokenStairDificultyScore + holeCount * holeDificultyScore + coilCount * coilDificultyScore + monsterCount * monsterDificultyScore;
 
     if(difficultyScore < randomMaxNum *(-10)){
       initialCharactorToBoard(stairCount,STAIR_NUM,blankRow);
@@ -427,7 +424,7 @@ void crashEmptyCell(){
   print(" ");
   setCursor(newPosition[0], newPosition[1]);
   write(DOODLER_NUM);
-  doodlerPosition[1] =  newPosition[1];
+  doodlerPosition[0] =  newPosition[0];
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
@@ -442,7 +439,7 @@ void crashBrokenStair(){
   setCursor(newPosition[0], newPosition[1]);
   print(" ");
   write(DOODLER_NUM);
-  doodlerPosition[1] =  newPosition[1];
+  doodlerPosition[0] =  newPosition[0];
   changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
 }
 
@@ -466,7 +463,8 @@ void printStringOnLCD(char str[],int row, int col){
   int size = sizeof str / sizeof str[0];
   for(int i = 0; i < size ; i++){
     setCursor(row,col+i);
-    print(str[i]);
+	sprintf(buffer,"%c",str[i]);
+	print(buffer);
   }
 }
 
@@ -474,12 +472,13 @@ void gameOver(){
   clear();
   printStringOnLCD("game",12,0);
   printStringOnLCD("over",10,0);
-  // setCursor(8,0);
-//  print("%s",score);
+  sprintf(buffer,"%d",score);
+  setCursor(7,1);
+  print(buffer);
 }
 
-void checkChange(){
-  if(newPosition[1] == -1){
+void checkDownChange(){
+  if(newPosition[0] == -1){
     gameOver();
   }
   else{
@@ -521,8 +520,23 @@ void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveO
 void setLastAndNewPosition(int moveDirecrion){
   lastPosition[0] = doodlerPosition[0];
   lastPosition[1] = doodlerPosition[1];
-  newPosition[0] = doodlerPosition[0] ;
-  newPosition[1] = doodlerPosition[1]+moveDirecrion;
+  newPosition[0] = doodlerPosition[0]+moveDirecrion ;
+  newPosition[1] = doodlerPosition[1];
+}
+
+void checkUpChange(){
+  setCursor(lastPosition[0], lastPosition[1]);
+  if(board[lastPosition[0]][lastPosition[1]] == DOODLER_NUM || board[lastPosition[0]][lastPosition[1]] == EMPTY_CELL_NUM){
+	print(" ");
+	changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+  }
+  else{
+    write(board[lastPosition[0]][lastPosition[1]]);
+    changeBoard(lastPosition,lastPosition,board[lastPosition[0]][lastPosition[1]],WRITE);
+  }
+  setCursor(newPosition[0], newPosition[1]);
+  write(DOODLER_NUM);
+  doodlerPosition[0] =  newPosition[0];
 }
 
 void moveUp(int countMoveUP){
@@ -531,17 +545,17 @@ void moveUp(int countMoveUP){
   if (doodlerDisplacementCount == countMoveUP) {
     doodlerDisplacementCount = -1;
   }
-  checkChange(lastPosition,newPosition);
+  checkUpChange();
 }
 
 void normalMoveDown(){
   setLastAndNewPosition(-1);
-  checkChange(lastPosition,newPosition);
+  checkDownChange();
 }
 
 void crashMonsterMoveDown(){
   setLastAndNewPosition(-1);
-  if(newPosition[1] < 0){
+  if(newPosition[0] < 0){
     gameOver();
   } else{
     setCursor(lastPosition[0], lastPosition[1]);
@@ -549,7 +563,7 @@ void crashMonsterMoveDown(){
     setCursor(newPosition[0], newPosition[1]);
     print(" ");
     write(DOODLER_NUM);
-    doodlerPosition[1] =  newPosition[1];
+    doodlerPosition[0] =  newPosition[0];
     changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
   }
 }
@@ -593,17 +607,17 @@ bool stopFlag = true;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM3) // TIM3 for controlling the buzzer
   {
-//    moveDoodler();
-    //		if(stopFlag)
-    //		{
-    //			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
-    //			stopFlag = false;
-    //		}
-    //		else
-    //		{
-    //			HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-    //			stopFlag = true;
-    //		}
+//	  moveDoodler();
+//    		if(stopFlag)
+//    		{
+//    			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
+//    			stopFlag = false;
+//    		}
+//    		else
+//    		{
+//    			HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+//    			stopFlag = true;
+//    		}
   }
   if (htim->Instance == TIM4){
 	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 0);
@@ -685,7 +699,6 @@ int main(void)
   createChar(COIL_NUM, coil);
   createChar(HOLE_NUM, hole);
   createChar(MONSTER_NUM, monster);
-
   setCursor(0, 0);
 //  write(DOODLER_NUM);
 //  print("saeed");
@@ -695,10 +708,24 @@ int main(void)
 
   htim2.Instance->CCR3 = 50;
 
-  HAL_TIM_Base_Start_IT(&htim3);
+  initBoard();
 
-//  genarateBoard(20);
-  gameOver();
+  board[0][2] = DOODLER_NUM;
+  doodlerPosition[0] = 0;
+  doodlerPosition[1] = 2;
+
+//  srand(HAL_GetTick());
+  genarateBoard(20);
+
+  for(int i = 0 ; i < 20; i++){
+	  HAL_Delay(2000);
+	  moveDoodler();
+  }
+
+//  HAL_TIM_Base_Start_IT(&htim3);
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -1175,16 +1202,16 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI2_TSC_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI2_TSC_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI2_TSC_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
 }
