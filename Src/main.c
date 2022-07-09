@@ -148,6 +148,7 @@ int downStatus = 0;
 int upStatus = 7;
 int lastPosition [2];
 int newPosition [2];
+int realCharactorInCurrentPosition = -1;
 
 #define EMPTY_CELL_NUM  -1
 #define DOODLER_NUM  0
@@ -166,6 +167,7 @@ int newPosition [2];
 char buffer[32];
 int x=1234;
 int y=1;
+bool startMoveDown = false;
 
 void genarateBoard(int blankRow);
 /////////////////////////////kepad////////////////////
@@ -421,11 +423,19 @@ void genarateBoard(int blankRow) {
 
 void crashEmptyCell(){
   setCursor(lastPosition[0], lastPosition[1]);
-  print(" ");
+  if(startMoveDown){
+    write(realCharactorInCurrentPosition);
+    startMoveDown = false;
+    changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WHILE);
+  }
+  else {
+    print(" ");
+    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WHILE);
+  }
   setCursor(newPosition[0], newPosition[1]);
   write(DOODLER_NUM);
   doodlerPosition[0] =  newPosition[0];
-  changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WHILE);
 }
 
 void crashStair(){
@@ -435,12 +445,20 @@ void crashStair(){
 
 void crashBrokenStair(){
   setCursor(lastPosition[0], lastPosition[1]);
-  print(" ");
+  if(startMoveDown){
+    write(realCharactorInCurrentPosition);
+    startMoveDown = false;
+    changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WHILE);
+  }
+  else {
+    print(" ");
+    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WHILE);
+  }
   setCursor(newPosition[0], newPosition[1]);
   print(" ");
   write(DOODLER_NUM);
   doodlerPosition[0] =  newPosition[0];
-  changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WHILE);
 }
 
 void crashCoil(){
@@ -508,10 +526,10 @@ void checkDownChange(){
 
 void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveOrRemoveOrWrite){
   if(moveOrRemoveOrWrite == MOVE){
-    board[lastPosition[0]][lastPosition[1]] = -1;
+    board[lastPosition[0]][lastPosition[1]] = EMPTY_CELL_NUM;
     board[curPosotion[0]][curPosotion[1]] = charNum;
   } else if(moveOrRemoveOrWrite == REMOVE){
-    board[lastPosition[0]][lastPosition[1]] = -1;
+    board[lastPosition[0]][lastPosition[1]] = EMPTY_CELL_NUM;
   } else if(moveOrRemoveOrWrite == WRITE){
     board[curPosotion[0]][curPosotion[1]] = charNum;
   }
@@ -522,30 +540,6 @@ void setLastAndNewPosition(int moveDirecrion){
   lastPosition[1] = doodlerPosition[1];
   newPosition[0] = doodlerPosition[0]+moveDirecrion ;
   newPosition[1] = doodlerPosition[1];
-}
-
-void checkUpChange(){
-  setCursor(lastPosition[0], lastPosition[1]);
-  if(board[lastPosition[0]][lastPosition[1]] == DOODLER_NUM || board[lastPosition[0]][lastPosition[1]] == EMPTY_CELL_NUM){
-	print(" ");
-	changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
-  }
-  else{
-    write(board[lastPosition[0]][lastPosition[1]]);
-    changeBoard(lastPosition,lastPosition,board[lastPosition[0]][lastPosition[1]],WRITE);
-  }
-  setCursor(newPosition[0], newPosition[1]);
-  write(DOODLER_NUM);
-  doodlerPosition[0] =  newPosition[0];
-}
-
-void moveUp(int countMoveUP){
-  setLastAndNewPosition(1);
-  doodlerDisplacementCount += 1;
-  if (doodlerDisplacementCount == countMoveUP) {
-    doodlerDisplacementCount = -1;
-  }
-  checkUpChange();
 }
 
 void normalMoveDown(){
@@ -564,8 +558,34 @@ void crashMonsterMoveDown(){
     print(" ");
     write(DOODLER_NUM);
     doodlerPosition[0] =  newPosition[0];
-    changeBoard(lastPosition,doodlerPosition,DOODLER_NUM,MOVE);
   }
+}
+
+void checkUpChange(){
+  if(doodlerDisplacementCount == 1){
+    setCursor(lastPosition[0], lastPosition[1]);
+    print(" ");
+    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+  } else {
+    setCursor(lastPosition[0], lastPosition[1]);
+    changeBoard(newPosition,newPosition,realCharactorInCurrentPosition,WRITE);
+    write(realCharactorInCurrentPosition);
+  }
+  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
+  setCursor(newPosition[0], newPosition[1]);
+  write(DOODLER_NUM);
+  doodlerPosition[0] =  newPosition[0];
+  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
+}
+
+void moveUp(int countMoveUP){
+  setLastAndNewPosition(1);
+  doodlerDisplacementCount += 1;
+  if (doodlerDisplacementCount == countMoveUP) {
+    doodlerDisplacementCount = -1;
+    startMoveDown = true;
+  }
+  checkUpChange();
 }
 
 void changeDoodlerPosition(int moveDirecrion) {
