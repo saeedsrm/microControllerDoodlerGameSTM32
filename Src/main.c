@@ -164,6 +164,8 @@ int realCharactorInCurrentPosition = -1;
 #define MONSTER_DOWN_STATUS  1
 #define NORMAL_UP_STATUS 7
 #define COIL_UP_STATUS  15
+#define LEFT  -1
+#define Right  1
 char buffer[32];
 int x=1234;
 int y=1;
@@ -620,6 +622,30 @@ void moveDoodler() {
   }
   else {
     changeDoodlerPosition(-1);
+  }
+}
+
+void horizontalMoving(int LeftOrRight){
+  if(doodlerPosition[1] > 0){
+    changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WHILE);
+    setCursor(doodlerPosition[0],doodlerPosition[1]);
+    print(" ");
+    doodlerPosition[1] -= 1;
+    changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WHILE);
+    setCursor(doodlerPosition[0],doodlerPosition[1]);
+    write(DOODLER_NUM);
+  }
+}
+
+void MoveToRight(){
+  if(doodlerPosition[1] < 3){
+    changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WHILE);
+    setCursor(doodlerPosition[0],doodlerPosition[1]);
+    print(" ");
+    doodlerPosition[1] += 1;
+    changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WHILE);
+    setCursor(doodlerPosition[0],doodlerPosition[1]);
+    write(DOODLER_NUM);
   }
 }
 
