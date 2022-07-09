@@ -338,8 +338,8 @@ void pageUp(){
   if(newPosition[0] != 0){
     for(int i = 0; i < newPosition[0]; i++){
       for(int j = 0; j < 4; j++){
-        if(board[i][j] != -1){
-          board[i][j] = -1;
+        if(board[i][j] != EMPTY_CELL_NUM){
+          board[i][j] = EMPTY_CELL_NUM;
           setCursor(i,j);
           print(" ");
         }
@@ -347,13 +347,13 @@ void pageUp(){
     }
     for(int i=newPosition[0];i<20;i++){
       for(int j =0 ; j<4; j++){
-        if(board[i][j] != -1 && doodlerPosition[0] != i){
+        if(board[i][j] != EMPTY_CELL_NUM && doodlerPosition[0] != i){ //todo(check: doodlerPosition[0] != i)
           setCursor(i,j);
           print(" ");
           setCursor(i-newPosition[0],j);
           write(board[i][j]);
           board[i-newPosition[0]][j]=board[i][j];
-          board[i][j] = -1;
+          board[i][j] = EMPTY_CELL_NUM;
         }
       }
     }
