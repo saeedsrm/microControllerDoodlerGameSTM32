@@ -510,10 +510,11 @@ void gameOver(){
   clear();
   setCursor(5,1);
   print("Game Over !")
-  setCursor(8,2);
+  clearScreen();
+  setCursor(8,1);
   print("score: ");
   sprintf(buffer,"%d",score);
-  setCursor(15,3);
+  setCursor(15,1);
   print(buffer);
 }
 
