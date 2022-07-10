@@ -644,19 +644,25 @@ void moveDoodler() {
 }
 
 void horizontalMoving(int direction){
-  if((direction == LEFT && doodlerPosition[1] > 0) || (direction == RIGHT && doodlerPosition[1] < 3)){
-    changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WRITE);
-    setCursor(doodlerPosition[0],doodlerPosition[1]);
-    print(" ");
-    if(direction == LEFT){
+  changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WHILE);
+  setCursor(doodlerPosition[0],doodlerPosition[1]);
+  print(" ");
+  if(direction == LEFT){
+    if(doodlerPosition[1] > 0){
       doodlerPosition[1] -= 1;
-    } else {
-      doodlerPosition[1] += 1;
+    }else {
+      doodlerPosition[1] = 3;
     }
-    changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
-    setCursor(doodlerPosition[0],doodlerPosition[1]);
-    write(DOODLER_NUM);
+  }else {
+    if(doodlerPosition[1] < 3){
+      doodlerPosition[1] += 1;
+    }else {
+      doodlerPosition[1] = 0;
+    }
   }
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WHILE);
+  setCursor(doodlerPosition[0],doodlerPosition[1]);
+  write(DOODLER_NUM);
 }
 
 bool stopFlag = true;
