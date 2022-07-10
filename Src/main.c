@@ -143,7 +143,7 @@ byte monster[] = {
 
 int board[20][4];
 int score = 0;
-int difficulty = 7;
+int difficulty = 5;
 int doodlerPosition[2] = {0, 0};
 int doodlerDisplacementCount = 1;
 int downStatus = 0;
@@ -299,7 +299,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   //	if(hadc->Instance == ADC1)
   //	{
   value = HAL_ADC_GetValue(hadc);
-  HAL_ADC_Start_IT(&hadc1);
+//  HAL_ADC_Start_IT(&hadc1);
   //	}
 }
 
@@ -371,7 +371,7 @@ void pageUp(){
     doodlerPosition[0] -= newPosition[0];
     genarateBoard(newPosition[0]);
   }
-  updateScore(newPosition[0]);
+  updateScore(newPosition[0]+1);
 }
 
 void updateScore(int upCount){
@@ -466,12 +466,12 @@ void crashBrokenStair(){
 	  }else{
 		  write(realCharactorInCurrentPosition);
 	  }
-    startMoveDown = false;
-    changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
+      startMoveDown = false;
+      changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
   }
   else {
-    print(" ");
-    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+      print(" ");
+      changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
   }
   setCursor(newPosition[0], newPosition[1]);
   write(DOODLER_NUM);
@@ -486,6 +486,8 @@ void crashCoil(){
 }
 
 void crashHole(){
+  downStatus = MONSTER_DOWN_STATUS;
+  doodlerPosition[0] = -1;
   gameOver();
 }
 
@@ -504,6 +506,7 @@ void printStringOnLCD(char str[],int row, int col){
 }
 
 void gameOver(){
+  HAL_TIM_Base_Stop_IT(&htim4);
   clear();
   printStringOnLCD("game",12,0);
   printStringOnLCD("over",10,0);
@@ -579,23 +582,32 @@ void crashMonsterMoveDown(){
 
 void checkUpChange(){
   if(doodlerDisplacementCount == 1){
-    setCursor(lastPosition[0], lastPosition[1]);
-    print(" ");
-    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
-  } else {
-    setCursor(lastPosition[0], lastPosition[1]);
-    changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
+	  setCursor(lastPosition[0], lastPosition[1]);
+	  print(" ");
+	  changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+	  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
+	  setCursor(newPosition[0], newPosition[1]);
+	  write(DOODLER_NUM);
+	  doodlerPosition[0] =  newPosition[0];
+	  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
+   }else if(realCharactorInCurrentPosition == HOLE_NUM){
+		crashHole();
+   }else if(realCharactorInCurrentPosition == MONSTER_NUM){
+		crashMonster();
+   }else {
+	  setCursor(lastPosition[0], lastPosition[1]);
+	  changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
 	  if (realCharactorInCurrentPosition==-1){
 		  print(" ");
 	  }else{
 		  write(realCharactorInCurrentPosition);
 	  }
+	  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
+	  setCursor(newPosition[0], newPosition[1]);
+	  write(DOODLER_NUM);
+	  doodlerPosition[0] =  newPosition[0];
+	  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
   }
-  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
-  setCursor(newPosition[0], newPosition[1]);
-  write(DOODLER_NUM);
-  doodlerPosition[0] =  newPosition[0];
-  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
 }
 
 void moveUp(int countMoveUP){
@@ -644,7 +656,7 @@ void moveDoodler() {
 }
 
 void horizontalMoving(int direction){
-  changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WHILE);
+  changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WRITE);
   setCursor(doodlerPosition[0],doodlerPosition[1]);
   print(" ");
   if(direction == LEFT){
@@ -660,54 +672,162 @@ void horizontalMoving(int direction){
       doodlerPosition[1] = 0;
     }
   }
-  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WHILE);
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
   setCursor(doodlerPosition[0],doodlerPosition[1]);
   write(DOODLER_NUM);
 }
 
+void print1OnScreen(){
+	setCursor(11, 1);
+	write(-1);
+	setCursor(12, 2);
+	write(-1);
+	setCursor(11, 2);
+	write(-1);
+	setCursor(10, 2);
+	write(-1);
+	setCursor(9, 2);
+	write(-1);
+	setCursor(8, 2);
+	write(-1);
+	setCursor(7, 2);
+	write(-1);
+	setCursor(6, 2);
+	write(-1);
+}
+
+void print2OnScreen(){
+	setCursor(12, 0);
+	write(-1);
+	setCursor(12, 1);
+	write(-1);
+	setCursor(12, 2);
+	write(-1);
+	setCursor(12, 3);
+	write(-1);
+	setCursor(11, 0);
+	write(-1);
+	setCursor(11, 3);
+	write(-1);
+	setCursor(10, 3);
+	write(-1);
+	setCursor(9, 0);
+	write(-1);
+	setCursor(9, 1);
+	write(-1);
+	setCursor(9, 2);
+	write(-1);
+	setCursor(9, 3);
+	write(-1);
+	setCursor(8, 0);
+	write(-1);
+	setCursor(7, 0);
+	write(-1);
+	setCursor(7, 3);
+	write(-1);
+	setCursor(6, 0);
+	write(-1);
+	setCursor(6, 1);
+	write(-1);
+	setCursor(6, 2);
+	write(-1);
+	setCursor(6, 3);
+	write(-1);
+}
+
+void print3OnScreen(){
+	setCursor(12, 0);
+	write(-1);
+	setCursor(12, 1);
+	write(-1);
+	setCursor(12, 2);
+	write(-1);
+	setCursor(11, 2);
+	write(-1);
+	setCursor(10, 2);
+	write(-1);
+	setCursor(9, 0);
+	write(-1);
+	setCursor(9, 1);
+	write(-1);
+	setCursor(9, 2);
+	write(-1);
+	setCursor(8, 2);
+	write(-1);
+	setCursor(7, 2);
+	write(-1);
+	setCursor(6, 0);
+	write(-1);
+	setCursor(6, 1);
+	write(-1);
+	setCursor(6, 2);
+	write(-1);
+}
+
+void clearScreen() {
+	for (int i = 0 ; i < 20; i++) {
+		for(int j = 0; j < 4; j++) {
+			setCursor(i, j);
+			print(" ");
+		}
+	}
+}
+
+void startGame(){
+	clearScreen();
+	print1OnScreen();
+	clearScreen();
+	print2OnScreen();
+	clearScreen();
+	print3OnScreen();
+	clearScreen();
+}
+
 bool stopFlag = true;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+
   if (htim->Instance == TIM3) // TIM3 for controlling the buzzer
   {
-  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
-//	  moveDoodler();
-	if(stopFlag)
-	{
-		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
-		stopFlag = false;
-	}
-	else
-	{
-		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-		stopFlag = true;
-	}
+//	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
+//
+//	if(stopFlag)
+//	{
+//		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
+//		stopFlag = false;
+//	}
+//	else
+//	{
+//		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+//		stopFlag = true;
+//	}
   }
   if (htim->Instance == TIM4){
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 0);
-
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10, 1);
-	  numberToBCD(x%10);
-	  y=x/10;
-	  HAL_Delay(5);
-
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_10, 0);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_11, 1);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12,1);
-	  numberToBCD(y%10);
-	  y=y/10;
-	  HAL_Delay(5);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12,0);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, 0);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_11, 1);
-	  numberToBCD(y%10);
-	  y=y/10;
-	  HAL_Delay(5);
-
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8, 0);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 1);
-	  numberToBCD(y%10);
-	  y=y/10;
-	  HAL_Delay(5);
+	  moveDoodler();
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 0);
+//
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10, 1);
+//	  numberToBCD(x%10);
+//	  y=x/10;
+//	  HAL_Delay(5);
+//
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_10, 0);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_11, 1);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12,1);
+//	  numberToBCD(y%10);
+//	  y=y/10;
+//	  HAL_Delay(5);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12,0);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, 0);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_11, 1);
+//	  numberToBCD(y%10);
+//	  y=y/10;
+//	  HAL_Delay(5);
+//
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8, 0);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 1);
+//	  numberToBCD(y%10);
+//	  y=y/10;
+//	  HAL_Delay(5);
    }
 }
 
@@ -765,7 +885,7 @@ int main(void)
   setCursor(0, 0);
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
-  //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+//  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 
   htim2.Instance->CCR3 = 50;
 
@@ -775,7 +895,7 @@ int main(void)
   doodlerPosition[0] = 0;
   doodlerPosition[1] = 2;
   srand(value);
-//  srand(HAL_GetTick());
+  startGame();
   genarateBoard(20);
 
 
@@ -784,7 +904,8 @@ int main(void)
 //	  moveDoodler();
 //  }
 
-//  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim4);
 
 
 
@@ -1112,7 +1233,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 720-1;
+  htim4.Init.Prescaler = 7200-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 10000-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
