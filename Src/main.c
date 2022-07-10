@@ -508,10 +508,12 @@ void printStringOnLCD(char str[],int row, int col){
 void gameOver(){
   HAL_TIM_Base_Stop_IT(&htim4);
   clear();
-  printStringOnLCD("game",12,0);
-  printStringOnLCD("over",10,0);
+  setCursor(5,1);
+  print("Game Over !")
+  setCursor(8,2);
+  print("score: ");
   sprintf(buffer,"%d",score);
-  setCursor(7,1);
+  setCursor(15,3);
   print(buffer);
 }
 
@@ -736,31 +738,31 @@ void print2OnScreen(){
 }
 
 void print3OnScreen(){
-	setCursor(12, 0);
-	write(-1);
 	setCursor(12, 1);
 	write(-1);
 	setCursor(12, 2);
 	write(-1);
-	setCursor(11, 2);
+	setCursor(12, 3);
 	write(-1);
-	setCursor(10, 2);
+	setCursor(11, 3);
 	write(-1);
-	setCursor(9, 0);
+	setCursor(10, 3);
 	write(-1);
 	setCursor(9, 1);
 	write(-1);
 	setCursor(9, 2);
 	write(-1);
-	setCursor(8, 2);
+	setCursor(9, 3);
 	write(-1);
-	setCursor(7, 2);
+	setCursor(8, 3);
 	write(-1);
-	setCursor(6, 0);
+	setCursor(7, 3);
 	write(-1);
 	setCursor(6, 1);
 	write(-1);
 	setCursor(6, 2);
+	write(-1);
+	setCursor(6, 3);
 	write(-1);
 }
 
@@ -781,6 +783,42 @@ void startGame(){
 	clearScreen();
 	print3OnScreen();
 	clearScreen();
+}
+
+void showGameOverView(){
+  clear();
+  setCursor(12,1);
+  print("Doolde");
+  setCursor(12,2);
+  print("Jump");
+  setCursor(4,1);
+  write(DOODLER_NUM);
+  setCursor(4,2);
+  write(STAIR_NUM);
+  setCursor(5,0);
+  write(BROKEN_STAIR_NUM);
+  setCursor(5,3);
+  write(HOLE_NUM);
+  setCursor(6,1);
+  write(COIL_NUM);
+  setCursor(6,2);
+  write(MONSTER_NUM);
+}
+
+void menu(){
+  clear();
+  setCursor(8,1);
+  print("1. Start");
+  setCursor(8,3);
+  print("2. About");
+}
+
+void groupMembersName(){
+  clear();
+  setCursor(2,1);
+  print("1. Saeed Rahmani");
+  setCursor(8,3);
+  print("2. Mohammad Raee");
 }
 
 bool stopFlag = true;
