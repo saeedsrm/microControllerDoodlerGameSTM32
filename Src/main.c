@@ -469,7 +469,6 @@ void crashCoil(){
   pageUp();
 }
 
-
 void crashHole(){
   gameOver();
 }
@@ -738,8 +737,6 @@ int main(void)
   createChar(HOLE_NUM, hole);
   createChar(MONSTER_NUM, monster);
   setCursor(0, 0);
-//  write(DOODLER_NUM);
-//  print("saeed");
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
   //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
