@@ -24,10 +24,11 @@
 /* USER CODE BEGIN Includes */
 #include "LiquidCrystal.h"
 #include <stdbool.h>
+#include "Buzzer.h"
 
 
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -151,6 +152,13 @@ int upStatus = 7;
 int lastPosition [2];
 int newPosition [2];
 int realCharactorInCurrentPosition = -1;
+int startMoveDown = 0;
+int lockMoving = 1;
+int isInOverViewPage = 1;
+int isInMenu = 0;
+int isInMembersPage = 0;
+int isGameStarted = 0;
+
 
 #define EMPTY_CELL_NUM  -1
 #define DOODLER_NUM  0
@@ -171,7 +179,6 @@ int realCharactorInCurrentPosition = -1;
 char buffer[32];
 int x=1234;
 int y=1;
-bool startMoveDown = false;
 
 void genarateBoard(int blankRow);
 /////////////////////////////kepad////////////////////
@@ -183,501 +190,6 @@ void initBoard(){
 			board[i][j]=-1;
 		}
 	}
-}
-
-void Rows_Set_Mode(uint8_t mode)
-{
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
-}
-
-
-uint8_t Get_Pressed_Row(uint16_t GPIO_Pin)
-{
-	Rows_Set_Mode(0);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, 1);
-	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
-		Rows_Set_Mode(1);
-		return 0;
-
-	}
-	Rows_Set_Mode(0);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, 1);
-	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
-		Rows_Set_Mode(1);
-		return 1;
-	}
-	Rows_Set_Mode(0);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, 1);
-	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
-		Rows_Set_Mode(1);
-		return 2;
-	}
-	Rows_Set_Mode(0);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, 1);
-	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
-		Rows_Set_Mode(1);
-		return 3;
-	}
-	return 0;
-}
-
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-
-
-	if((HAL_GetTick() - now ) < 200){
-		return;
-	}
-	//LED On board
-	HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
-
-	int number = 0, row;
-	row = Get_Pressed_Row(GPIO_Pin);
-	switch(GPIO_Pin)
-	{
-		case GPIO_PIN_0:{
-			number = 4 * row + 1;
-			break;
-		}
-
-		case GPIO_PIN_1:{
-			number = 4 * row + 2;
-			break;
-		}
-		case GPIO_PIN_2:{
-			number = 4 * row + 3;
-			break;
-		}
-		case GPIO_PIN_3:{
-			number = 4 * row + 4;
-			break;
-		}
-	}
-	Rows_Set_Mode(1);
-	now = HAL_GetTick();
-	if (number==1){
-		horizontalMoving(LEFT);
-	}
-	if (number==4){
-		horizontalMoving(RIGHT);
-	}
-//	setCursor(0, 0);
-//	sprintf(buffer,"%d",number);
-//	print(buffer);
-
-}
-/////////////////////////////end keypad//////////////////
-
-//////////////////////////// 7 Segment ///////////////////
-void numberToBCD(int i){
-	int x1=i&1;
-	int x2=i&2;
-	int x3=i&4;
-	int x4=i&8;
-	if (x1>0) x1=1;
-	if (x2>0) x2=1;
-	if (x3>0) x3=1;
-	if (x4>0) x4=1;
-
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, x1);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, x2);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, x3);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, x4);
-}
-
-
-
-////////////////////////// end 7 segment//////////////////
-
-uint32_t value = 0;
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
-{
-  //	if(hadc->Instance == ADC1)
-  //	{
-  value = HAL_ADC_GetValue(hadc);
-//  HAL_ADC_Start_IT(&hadc1);
-  //	}
-}
-
-void initialCharactorToBoard(int charCount, int charNum, int blankRow){
-  for(int i = 0; i < charCount; i++){
-    int sw = 1;
-    while(sw){
-      int row = getRandom(20);
-      int col = getRandom(4);
-      if(board[19-row][col] == -1){
-        board[19-row][col] = charNum;
-        sw = 0;
-      }
-    }
-  }
-}
-
-int checkStairInsideDoodler(int accessRowCount){
-  int sw = 1;
-  for(int i = doodlerPosition[0];i<doodlerPosition[0] + accessRowCount && sw ==1;i++){
-    for(int j = 0; j<4 && sw==1 ;j++){
-      if(board[i][j]==STAIR_NUM) sw=0;
-    }
-  }
-  if(sw==1) return 0;
-  else return 1;
-}
-
-bool validateInitializeBoard(int blankRow){
-  int sw = 1;
-  for(int i = 20-blankRow; i<20 && sw==1; i++){
-    if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM && board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
-       sw = 0;
-     }
-     else if(board[i][0]==MONSTER_NUM && board[i][1]==MONSTER_NUM && board[i][2]==MONSTER_NUM && board[i][3]==MONSTER_NUM ){
-       sw = 0;
-     }
-  }
-  if(sw == 1){
-    sw = checkStairInsideDoodler(upStatus);
-  }
-  if(sw == 1) return true;
-  else return false;
-}
-
-void pageUp(){
-  if(newPosition[0] != 0){
-    for(int i = 0; i < newPosition[0]; i++){
-      for(int j = 0; j < 4; j++){
-        if(board[i][j] != EMPTY_CELL_NUM){
-          board[i][j] = EMPTY_CELL_NUM;
-          setCursor(i,j);
-          print(" ");
-        }
-      }
-    }
-    for(int i=newPosition[0];i<20;i++){
-      for(int j =0 ; j<4; j++){
-        if(board[i][j] != EMPTY_CELL_NUM){
-          setCursor(i,j);
-          print(" ");
-          setCursor(i-newPosition[0],j);
-          write(board[i][j]);
-          board[i-newPosition[0]][j]=board[i][j];
-          board[i][j] = EMPTY_CELL_NUM;
-        }
-      }
-    }
-    doodlerPosition[0] -= newPosition[0];
-    genarateBoard(newPosition[0]);
-  }
-  updateScore(newPosition[0]+1);
-}
-
-void updateScore(int upCount){
-  score += upCount;
-}
-
-int getRandom(int maxNum){
-  int rand_num= rand() % maxNum;
-  return rand_num;
-}
-
-void printBoard(int minRow){
-  for(int i = minRow; i< 20;i++){
-    for(int j = 0; j<4;j++){
-      if(board[i][j] != -1){
-        setCursor(i,j);
-        write(board[i][j]);
-      }
-    }
-  }
-}
-
-void genarateBoard(int blankRow) {
-  int randomMaxNum = difficulty;
-  int stairCount;
-  int brokenStairCount;
-  int holeCount;
-  int monsterCount;
-  int coilCount;
-
-  int stairDificaltyScore = 5;
-  int brokenStairDificultyScore = -3;
-  int holeDificultyScore = -30;
-  int coilDificultyScore = 8;
-  int monsterDificultyScore = -30;
-
-
-  while(1){
-    stairCount = getRandom(randomMaxNum);
-    brokenStairCount = getRandom(randomMaxNum);
-    holeCount = getRandom(randomMaxNum);
-    coilCount = getRandom(randomMaxNum);
-    monsterCount = getRandom(randomMaxNum);
-
-    int difficultyScore = stairCount * stairDificaltyScore + brokenStairCount * brokenStairDificultyScore + holeCount * holeDificultyScore + coilCount * coilDificultyScore + monsterCount * monsterDificultyScore;
-
-    if(difficultyScore < randomMaxNum *(-10)){
-      initialCharactorToBoard(stairCount,STAIR_NUM,blankRow);
-      initialCharactorToBoard(brokenStairCount,BROKEN_STAIR_NUM,blankRow);
-      initialCharactorToBoard(holeCount,HOLE_NUM,blankRow);
-      initialCharactorToBoard(coilCount,COIL_NUM,blankRow);
-      initialCharactorToBoard(monsterCount,MONSTER_NUM,blankRow);
-      if(validateInitializeBoard(blankRow)){
-        printBoard(20-blankRow);
-        break;
-      }
-    }
-  }
-}
-
-void crashEmptyCell(){
-  setCursor(lastPosition[0], lastPosition[1]);
-  if(startMoveDown){
-	  if (realCharactorInCurrentPosition==-1){
-		  print(" ");
-	  }else{
-		  write(realCharactorInCurrentPosition);
-	  }
-    startMoveDown = false;
-    changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
-  }
-  else {
-    print(" ");
-    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
-  }
-  setCursor(newPosition[0], newPosition[1]);
-  write(DOODLER_NUM);
-  doodlerPosition[0] =  newPosition[0];
-  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
-}
-
-void crashStair(){
-  doodlerDisplacementCount = 1;
-  pageUp();
-}
-
-void crashBrokenStair(){
-  setCursor(lastPosition[0], lastPosition[1]);
-  if(startMoveDown){
-	  if (realCharactorInCurrentPosition==-1){
-		  print(" ");
-	  }else{
-		  write(realCharactorInCurrentPosition);
-	  }
-      startMoveDown = false;
-      changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
-  }
-  else {
-      print(" ");
-      changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
-  }
-  setCursor(newPosition[0], newPosition[1]);
-  write(DOODLER_NUM);
-  doodlerPosition[0] =  newPosition[0];
-  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
-}
-
-void crashCoil(){
-  doodlerDisplacementCount = 1;
-  upStatus = COIL_UP_STATUS;
-  pageUp();
-}
-
-void crashHole(){
-  downStatus = MONSTER_DOWN_STATUS;
-  doodlerPosition[0] = -1;
-  gameOver();
-}
-
-void crashMonster(){
-  doodlerDisplacementCount = -1;
-  downStatus = MONSTER_DOWN_STATUS;
-}
-
-void printStringOnLCD(char str[],int row, int col){
-  int size = sizeof str / sizeof str[0];
-  for(int i = 0; i < size ; i++){
-    setCursor(row,col+i);
-	sprintf(buffer,"%c",str[i]);
-	print(buffer);
-  }
-}
-
-void gameOver(){
-  HAL_TIM_Base_Stop_IT(&htim4);
-  clear();
-  setCursor(5,1);
-  print("Game Over !")
-  clearScreen();
-  setCursor(8,1);
-  print("score: ");
-  sprintf(buffer,"%d",score);
-  setCursor(15,1);
-  print(buffer);
-}
-
-void checkDownChange(){
-  if(newPosition[0] == -1){
-    gameOver();
-  }
-  else{
-    switch( board[newPosition[0]][newPosition[1]] ){
-      case EMPTY_CELL_NUM: {
-        crashEmptyCell();
-        break;
-      } case STAIR_NUM: {
-        crashStair();
-        break;
-      } case BROKEN_STAIR_NUM :{
-        crashBrokenStair();
-        break;
-      } case COIL_NUM : {
-        crashCoil();
-        break;
-      } case HOLE_NUM : {
-        crashHole();
-        break;
-      } case MONSTER_NUM : {
-        crashMonster();
-        break;
-      }
-    }
-  }
-}
-
-void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveOrRemoveOrWrite){
-  if(moveOrRemoveOrWrite == MOVE){
-    board[lastPosition[0]][lastPosition[1]] = EMPTY_CELL_NUM;
-    board[curPosotion[0]][curPosotion[1]] = charNum;
-  } else if(moveOrRemoveOrWrite == REMOVE){
-    board[lastPosition[0]][lastPosition[1]] = EMPTY_CELL_NUM;
-  } else if(moveOrRemoveOrWrite == WRITE){
-    board[curPosotion[0]][curPosotion[1]] = charNum;
-  }
-}
-
-void setLastAndNewPosition(int moveDirecrion){
-  lastPosition[0] = doodlerPosition[0];
-  lastPosition[1] = doodlerPosition[1];
-  newPosition[0] = doodlerPosition[0]+moveDirecrion ;
-  newPosition[1] = doodlerPosition[1];
-}
-
-void normalMoveDown(){
-  setLastAndNewPosition(-1);
-  checkDownChange();
-}
-
-void crashMonsterMoveDown(){
-  setLastAndNewPosition(-1);
-  if(newPosition[0] < 0){
-    gameOver();
-  } else{
-    setCursor(lastPosition[0], lastPosition[1]);
-    print(" ");
-    setCursor(newPosition[0], newPosition[1]);
-    write(DOODLER_NUM);
-    doodlerPosition[0] =  newPosition[0];
-  }
-}
-
-void checkUpChange(){
-  if(doodlerDisplacementCount == 1){
-	  setCursor(lastPosition[0], lastPosition[1]);
-	  print(" ");
-	  changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
-	  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
-	  setCursor(newPosition[0], newPosition[1]);
-	  write(DOODLER_NUM);
-	  doodlerPosition[0] =  newPosition[0];
-	  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
-   }else if(realCharactorInCurrentPosition == HOLE_NUM){
-		crashHole();
-   }else if(realCharactorInCurrentPosition == MONSTER_NUM){
-		crashMonster();
-   }else {
-	  setCursor(lastPosition[0], lastPosition[1]);
-	  changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
-	  if (realCharactorInCurrentPosition==-1){
-		  print(" ");
-	  }else{
-		  write(realCharactorInCurrentPosition);
-	  }
-	  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
-	  setCursor(newPosition[0], newPosition[1]);
-	  write(DOODLER_NUM);
-	  doodlerPosition[0] =  newPosition[0];
-	  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
-  }
-}
-
-void moveUp(int countMoveUP){
-  setLastAndNewPosition(1);
-  checkUpChange();
-  doodlerDisplacementCount += 1;
-  if (doodlerDisplacementCount == countMoveUP) {
-    doodlerDisplacementCount = -1;
-    startMoveDown = true;
-  }
-}
-
-void changeDoodlerPosition(int moveDirecrion) {
-  if (moveDirecrion == 1) {
-    switch (upStatus){
-      case NORMAL_UP_STATUS:{
-        moveUp(8);
-        break;
-      }case COIL_UP_STATUS : {
-        moveUp(16);
-        break;
-      }
-    }
-  }
-  else if (moveDirecrion == -1) {
-    switch(downStatus){
-      case NORMAL_DOWN_STATUS: {
-        normalMoveDown();
-        break;
-      }
-      case MONSTER_DOWN_STATUS: {
-        crashMonsterMoveDown();
-        break;
-      }
-    }
-  }
-}
-
-void moveDoodler() {
-  if (doodlerDisplacementCount >= 1) {
-    changeDoodlerPosition(1);
-  }
-  else {
-    changeDoodlerPosition(-1);
-  }
-}
-
-void horizontalMoving(int direction){
-  changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WRITE);
-  setCursor(doodlerPosition[0],doodlerPosition[1]);
-  print(" ");
-  if(direction == LEFT){
-    if(doodlerPosition[1] > 0){
-      doodlerPosition[1] -= 1;
-    }else {
-      doodlerPosition[1] = 3;
-    }
-  }else {
-    if(doodlerPosition[1] < 3){
-      doodlerPosition[1] += 1;
-    }else {
-      doodlerPosition[1] = 0;
-    }
-  }
-  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
-  setCursor(doodlerPosition[0],doodlerPosition[1]);
-  write(DOODLER_NUM);
 }
 
 void print1OnScreen(){
@@ -777,6 +289,7 @@ void clearScreen() {
 }
 
 void startGame(){
+	isInMenu = 0;
 	clearScreen();
 	print1OnScreen();
 	clearScreen();
@@ -784,51 +297,594 @@ void startGame(){
 	clearScreen();
 	print3OnScreen();
 	clearScreen();
+	genarateBoard(20);
+	isGameStarted = 1;
+	lockMoving = 0;
+	HAL_TIM_Base_Start_IT(&htim4);
 }
 
 void showGameOverView(){
+  isGameStarted = 0;
+  lockMoving = 1;
+  isInOverViewPage = 1;
   clear();
   setCursor(12,1);
   print("Doolde");
   setCursor(12,2);
   print("Jump");
-  setCursor(4,1);
+  setCursor(3,1);
   write(DOODLER_NUM);
-  setCursor(4,2);
+  setCursor(4,1);
   write(STAIR_NUM);
-  setCursor(5,0);
+  setCursor(5,1);
   write(BROKEN_STAIR_NUM);
-  setCursor(5,3);
-  write(HOLE_NUM);
   setCursor(6,1);
+  write(HOLE_NUM);
+  setCursor(7,1);
   write(COIL_NUM);
-  setCursor(6,2);
+  setCursor(8,1);
   write(MONSTER_NUM);
+  setCursor(3,3);
+  print("5.Menu");
 }
 
 void menu(){
+  isInOverViewPage = 0;
+  isInMembersPage = 0;
+  isInMenu = 1;
   clear();
-  setCursor(8,1);
-  print("1. Start");
-  setCursor(8,3);
-  print("2. About");
+  setCursor(6,0);
+  print("2.Start");
+  setCursor(6,2);
+  print("3.About");
 }
 
-void groupMembersName(){
+void showGroupMembersName(){
+  isInMenu = 0;
+  isInMembersPage = 1;
   clear();
-  setCursor(2,1);
-  print("1. Saeed Rahmani");
+  setCursor(5,0);
+  print("SaeedRahmani");
+  setCursor(5,1);
+  print("MohammadRaee");
   setCursor(8,3);
-  print("2. Mohammad Raee");
+  print("6.Menu");
+}
+
+void changeBoard(int lastPosition [], int curPosotion [],int charNum , int moveOrRemoveOrWrite){
+  if(moveOrRemoveOrWrite == MOVE){
+    board[lastPosition[0]][lastPosition[1]] = EMPTY_CELL_NUM;
+    board[curPosotion[0]][curPosotion[1]] = charNum;
+  } else if(moveOrRemoveOrWrite == REMOVE){
+    board[lastPosition[0]][lastPosition[1]] = EMPTY_CELL_NUM;
+  } else if(moveOrRemoveOrWrite == WRITE){
+    board[curPosotion[0]][curPosotion[1]] = charNum;
+  }
+}
+
+void horizontalMoving(int direction){
+  changeBoard(doodlerPosition,doodlerPosition,EMPTY_CELL_NUM,WRITE);
+  setCursor(doodlerPosition[0],doodlerPosition[1]);
+  print(" ");
+  if(direction == LEFT){
+    if(doodlerPosition[1] > 0){
+      doodlerPosition[1] -= 1;
+    }else {
+      doodlerPosition[1] = 3;
+    }
+  }else {
+    if(doodlerPosition[1] < 3){
+      doodlerPosition[1] += 1;
+    }else {
+      doodlerPosition[1] = 0;
+    }
+  }
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
+  setCursor(doodlerPosition[0],doodlerPosition[1]);
+  write(DOODLER_NUM);
+}
+
+void Rows_Set_Mode(uint8_t mode)
+{
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, mode ? (GPIO_PIN_SET) : (GPIO_PIN_RESET));
+}
+
+
+uint8_t Get_Pressed_Row(uint16_t GPIO_Pin)
+{
+	Rows_Set_Mode(0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, 1);
+	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
+		Rows_Set_Mode(1);
+		return 0;
+
+	}
+	Rows_Set_Mode(0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, 1);
+	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
+		Rows_Set_Mode(1);
+		return 1;
+	}
+	Rows_Set_Mode(0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, 1);
+	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
+		Rows_Set_Mode(1);
+		return 2;
+	}
+	Rows_Set_Mode(0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, 1);
+	if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin)==1){
+		Rows_Set_Mode(1);
+		return 3;
+	}
+	return 0;
+}
+
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+
+	if((HAL_GetTick() - now ) < 200){
+		return;
+	}
+	//LED On board
+	HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
+
+	int number = 0, row;
+	row = Get_Pressed_Row(GPIO_Pin);
+	switch(GPIO_Pin)
+	{
+		case GPIO_PIN_0:{
+			number = 4 * row + 1;
+			break;
+		}
+
+		case GPIO_PIN_1:{
+			number = 4 * row + 2;
+			break;
+		}
+		case GPIO_PIN_2:{
+			number = 4 * row + 3;
+			break;
+		}
+		case GPIO_PIN_3:{
+			number = 4 * row + 4;
+			break;
+		}
+	}
+	Rows_Set_Mode(1);
+	now = HAL_GetTick();
+	if (number==1 && lockMoving == 0){
+		horizontalMoving(LEFT);
+	}
+	else if(number == 2 && isInMenu == 1) {
+		startGame();
+	}
+	else if(number == 3 && isInMenu == 1){
+		showGroupMembersName();
+	}
+	else if (number==4 && lockMoving == 0){
+		horizontalMoving(RIGHT);
+	}
+	else if (number==5 && isInOverViewPage == 1) {
+		menu();
+	}
+	else if(number == 6 && isInMembersPage == 1){
+		menu();
+	}
+}
+/////////////////////////////end keypad//////////////////
+
+//////////////////////////// 7 Segment ///////////////////
+void numberToBCD(int i){
+	int x1=i&1;
+	int x2=i&2;
+	int x3=i&4;
+	int x4=i&8;
+	if (x1>0) x1=1;
+	if (x2>0) x2=1;
+	if (x3>0) x3=1;
+	if (x4>0) x4=1;
+
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, x1);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, x2);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, x3);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, x4);
+}
+
+
+
+////////////////////////// end 7 segment//////////////////
+
+uint32_t value = 0;
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+  //	if(hadc->Instance == ADC1)
+  //	{
+  value = HAL_ADC_GetValue(hadc);
+//  HAL_ADC_Start_IT(&hadc1);
+  //	}
+}
+
+int getRandom(int maxNum){
+  int rand_num= rand() % maxNum;
+  return rand_num;
+}
+
+void initialCharactorToBoard(int charCount, int charNum, int blankRow){
+  for(int i = 0; i < charCount; i++){
+    int sw = 1;
+    while(sw){
+      int row = getRandom(20);
+      int col = getRandom(4);
+      if(board[19-row][col] == -1){
+        board[19-row][col] = charNum;
+        sw = 0;
+      }
+    }
+  }
+}
+
+int checkStairInsideDoodler(int accessRowCount){
+  int sw = 1;
+  for(int i = doodlerPosition[0];i<doodlerPosition[0] + accessRowCount && sw ==1;i++){
+    for(int j = 0; j<4 && sw==1 ;j++){
+      if(board[i][j]==STAIR_NUM) sw=0;
+    }
+  }
+  if(sw==1) return 0;
+  else return 1;
+}
+
+bool validateInitializeBoard(int blankRow){
+  int sw = 1;
+  for(int i = 20-blankRow; i<20 && sw==1; i++){
+    if(board[i][0]==HOLE_NUM && board[i][1]==HOLE_NUM && board[i][2]==HOLE_NUM && board[i][3]==HOLE_NUM ){
+       sw = 0;
+     }
+     else if(board[i][0]==MONSTER_NUM && board[i][1]==MONSTER_NUM && board[i][2]==MONSTER_NUM && board[i][3]==MONSTER_NUM ){
+       sw = 0;
+     }
+  }
+  if(sw == 1){
+    sw = checkStairInsideDoodler(upStatus);
+  }
+  if(sw == 1) return true;
+  else return false;
+}
+
+void updateScore(int upCount){
+  score += upCount;
+}
+
+void pageUp(){
+  if(newPosition[0] != 0){
+    for(int i = 0; i < newPosition[0]; i++){
+      for(int j = 0; j < 4; j++){
+        if(board[i][j] != EMPTY_CELL_NUM){
+          board[i][j] = EMPTY_CELL_NUM;
+          setCursor(i,j);
+          print(" ");
+        }
+      }
+    }
+    for(int i=newPosition[0];i<20;i++){
+      for(int j =0 ; j<4; j++){
+        if(board[i][j] != EMPTY_CELL_NUM){
+          setCursor(i,j);
+          print(" ");
+          setCursor(i-newPosition[0],j);
+          write(board[i][j]);
+          board[i-newPosition[0]][j]=board[i][j];
+          board[i][j] = EMPTY_CELL_NUM;
+        }
+      }
+    }
+    doodlerPosition[0] -= newPosition[0];
+    genarateBoard(newPosition[0]);
+  }
+  updateScore(newPosition[0]+1);
+}
+
+void printBoard(int minRow){
+  for(int i = minRow; i< 20;i++){
+    for(int j = 0; j<4;j++){
+      if(board[i][j] != -1){
+        setCursor(i,j);
+        write(board[i][j]);
+      }
+    }
+  }
+}
+
+void genarateBoard(int blankRow) {
+  int randomMaxNum = difficulty;
+  int stairCount;
+  int brokenStairCount;
+  int holeCount;
+  int monsterCount;
+  int coilCount;
+
+  int stairDificaltyScore = 5;
+  int brokenStairDificultyScore = -3;
+  int holeDificultyScore = -30;
+  int coilDificultyScore = 8;
+  int monsterDificultyScore = -30;
+
+
+  while(1){
+    stairCount = getRandom(randomMaxNum);
+    brokenStairCount = getRandom(randomMaxNum);
+    holeCount = getRandom(randomMaxNum);
+    coilCount = getRandom(randomMaxNum);
+    monsterCount = getRandom(randomMaxNum);
+
+    int difficultyScore = stairCount * stairDificaltyScore + brokenStairCount * brokenStairDificultyScore + holeCount * holeDificultyScore + coilCount * coilDificultyScore + monsterCount * monsterDificultyScore;
+
+    if(difficultyScore < randomMaxNum *(-10)){
+      initialCharactorToBoard(stairCount,STAIR_NUM,blankRow);
+      initialCharactorToBoard(brokenStairCount,BROKEN_STAIR_NUM,blankRow);
+      initialCharactorToBoard(holeCount,HOLE_NUM,blankRow);
+      initialCharactorToBoard(coilCount,COIL_NUM,blankRow);
+      initialCharactorToBoard(monsterCount,MONSTER_NUM,blankRow);
+      if(validateInitializeBoard(blankRow)){
+        printBoard(20-blankRow);
+        break;
+      }
+    }
+  }
+}
+
+void crashEmptyCell(){
+  setCursor(lastPosition[0], lastPosition[1]);
+  if(startMoveDown == 1){
+	  if (realCharactorInCurrentPosition==-1){
+		  print(" ");
+	  }else{
+		  write(realCharactorInCurrentPosition);
+	  }
+    startMoveDown = 0;
+    changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
+  }
+  else {
+    print(" ");
+    changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+  }
+  setCursor(newPosition[0], newPosition[1]);
+  write(DOODLER_NUM);
+  doodlerPosition[0] =  newPosition[0];
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
+}
+
+void crashStair(){
+  doodlerDisplacementCount = 1;
+  pageUp();
+}
+
+void crashBrokenStair(){
+  setCursor(lastPosition[0], lastPosition[1]);
+  if(startMoveDown == 1){
+	  if (realCharactorInCurrentPosition==-1){
+		  print(" ");
+	  }else{
+		  write(realCharactorInCurrentPosition);
+	  }
+      startMoveDown = 0;
+      changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
+  }
+  else {
+      print(" ");
+      changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+  }
+  setCursor(newPosition[0], newPosition[1]);
+  write(DOODLER_NUM);
+  doodlerPosition[0] =  newPosition[0];
+  changeBoard(doodlerPosition,doodlerPosition,DOODLER_NUM,WRITE);
+}
+
+void crashCoil(){
+  doodlerDisplacementCount = 1;
+  upStatus = COIL_UP_STATUS;
+  pageUp();
+}
+
+void gameOver(){
+	lockMoving = 1;
+    HAL_TIM_Base_Stop_IT(&htim4);
+	clear();
+	setCursor(5,1);
+	print("Game Over !");
+	clearScreen();
+	setCursor(8,1);
+	print("score: ");
+	sprintf(buffer,"%d",score);
+	setCursor(15,1);
+	print(buffer);
+    BUZZER_Play_Doom();
+}
+
+void crashHole(){
+  downStatus = MONSTER_DOWN_STATUS;
+  doodlerPosition[0] = -1;
+  gameOver();
+}
+
+void crashMonster(){
+  lockMoving = 1;
+  doodlerDisplacementCount = -1;
+  downStatus = MONSTER_DOWN_STATUS;
+}
+
+void checkDownChange(){
+  if(newPosition[0] == -1){
+    gameOver();
+  }
+  else{
+    switch( board[newPosition[0]][newPosition[1]] ){
+      case EMPTY_CELL_NUM: {
+        crashEmptyCell();
+        break;
+      } case STAIR_NUM: {
+        crashStair();
+        break;
+      } case BROKEN_STAIR_NUM :{
+        crashBrokenStair();
+        break;
+      } case COIL_NUM : {
+        crashCoil();
+        break;
+      } case HOLE_NUM : {
+        crashHole();
+        break;
+      } case MONSTER_NUM : {
+        crashMonster();
+        break;
+      }
+    }
+  }
+}
+
+void setLastAndNewPosition(int moveDirecrion){
+  lastPosition[0] = doodlerPosition[0];
+  lastPosition[1] = doodlerPosition[1];
+  newPosition[0] = doodlerPosition[0]+moveDirecrion ;
+  newPosition[1] = doodlerPosition[1];
+}
+
+void normalMoveDown(){
+  setLastAndNewPosition(-1);
+  checkDownChange();
+}
+
+void crashMonsterMoveDown(){
+  setLastAndNewPosition(-1);
+  if(newPosition[0] < 0){
+    gameOver();
+  } else{
+    setCursor(lastPosition[0], lastPosition[1]);
+    print(" ");
+    setCursor(newPosition[0], newPosition[1]);
+    write(DOODLER_NUM);
+    doodlerPosition[0] =  newPosition[0];
+  }
+}
+
+void checkUpChange(){
+  if(doodlerDisplacementCount == 1){
+	  setCursor(lastPosition[0], lastPosition[1]);
+	  print(" ");
+	  changeBoard(lastPosition,lastPosition,EMPTY_CELL_NUM,WRITE);
+	  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
+	  setCursor(newPosition[0], newPosition[1]);
+	  write(DOODLER_NUM);
+	  doodlerPosition[0] =  newPosition[0];
+	  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
+   }else if(realCharactorInCurrentPosition == HOLE_NUM){
+		crashHole();
+   }else if(realCharactorInCurrentPosition == MONSTER_NUM){
+		crashMonster();
+   }else {
+	  setCursor(lastPosition[0], lastPosition[1]);
+	  changeBoard(lastPosition,lastPosition,realCharactorInCurrentPosition,WRITE);
+	  if (realCharactorInCurrentPosition==-1){
+		  print(" ");
+	  }else{
+		  write(realCharactorInCurrentPosition);
+	  }
+	  realCharactorInCurrentPosition = board[newPosition[0]][newPosition[1]];
+	  setCursor(newPosition[0], newPosition[1]);
+	  write(DOODLER_NUM);
+	  doodlerPosition[0] =  newPosition[0];
+	  changeBoard(newPosition,newPosition,DOODLER_NUM,WRITE);
+  }
+}
+
+void moveUp(int countMoveUP){
+  setLastAndNewPosition(1);
+  checkUpChange();
+  doodlerDisplacementCount += 1;
+  if (doodlerDisplacementCount == countMoveUP) {
+    doodlerDisplacementCount = -1;
+    startMoveDown = 1;
+  }
+}
+
+void changeDoodlerPosition(int moveDirecrion) {
+  if (moveDirecrion == 1) {
+    switch (upStatus){
+      case NORMAL_UP_STATUS:{
+        moveUp(8);
+        break;
+      }case COIL_UP_STATUS : {
+        moveUp(16);
+        break;
+      }
+    }
+  }
+  else if (moveDirecrion == -1) {
+    switch(downStatus){
+      case NORMAL_DOWN_STATUS: {
+        normalMoveDown();
+        break;
+      }
+      case MONSTER_DOWN_STATUS: {
+        crashMonsterMoveDown();
+        break;
+      }
+    }
+  }
+}
+
+void moveDoodler() {
+  if (doodlerDisplacementCount >= 1) {
+    changeDoodlerPosition(1);
+  }
+  else {
+    changeDoodlerPosition(-1);
+  }
 }
 
 bool stopFlag = true;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
+
   if (htim->Instance == TIM3) // TIM3 for controlling the buzzer
   {
+//	  8,9,10,11
+//	  6,7,8, 9
 //	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
 //
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, 0);
+//
+//	  //9
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8, 1);
+//	  numberToBCD(x%10);
+//	  y=x/10;
+//
+//	  //8
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, 0);
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_9, 1);
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_12,1);
+//	  numberToBCD(y%10);
+//	  y=y/10;
+//
+//	  //7
+////	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_12,0);decimal
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9, 1);
+//	  numberToBCD(y%10);
+//	  y=y/10;
+//
+//	  //6
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, 0);
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, 1);
+//	  numberToBCD(y%10);
+//	  y=y/10;
+
+
 //	if(stopFlag)
 //	{
 //		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
@@ -841,32 +897,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //	}
   }
   if (htim->Instance == TIM4){
-	  moveDoodler();
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 0);
-//
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10, 1);
-//	  numberToBCD(x%10);
-//	  y=x/10;
-//	  HAL_Delay(5);
-//
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_10, 0);
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_11, 1);
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12,1);
-//	  numberToBCD(y%10);
-//	  y=y/10;
-//	  HAL_Delay(5);
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12,0);
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, 0);
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_11, 1);
-//	  numberToBCD(y%10);
-//	  y=y/10;
-//	  HAL_Delay(5);
-//
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_8, 0);
-//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, 1);
-//	  numberToBCD(y%10);
-//	  y=y/10;
-//	  HAL_Delay(5);
+	  if(isGameStarted == 1){
+		  moveDoodler();
+	  }
+
    }
 }
 
@@ -926,7 +960,7 @@ int main(void)
   HAL_ADC_Start_IT(&hadc1);
 //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 
-  htim2.Instance->CCR3 = 50;
+//  htim2.Instance->CCR3 = 50;
 
   initBoard();
 
@@ -934,8 +968,8 @@ int main(void)
   doodlerPosition[0] = 0;
   doodlerPosition[1] = 2;
   srand(value);
-  startGame();
-  genarateBoard(20);
+  showGameOverView();
+//  genarateBoard(20);
 
 
 //  for(int i = 0 ; i < 30; i++){
@@ -944,9 +978,10 @@ int main(void)
 //  }
 
   HAL_TIM_Base_Start_IT(&htim3);
-  HAL_TIM_Base_Start_IT(&htim4);
+//  HAL_TIM_Base_Start_IT(&htim4);
 
-
+  BUZZER_SetTIM(&htim2, TIM_CHANNEL_3);
+//  BUZZER_Play_GameOfThrones();
 
   /* USER CODE END 2 */
 
