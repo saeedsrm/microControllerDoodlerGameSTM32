@@ -158,6 +158,9 @@ int isInOverViewPage = 1;
 int isInMenu = 0;
 int isInMembersPage = 0;
 int isGameStarted = 0;
+int isShotInScreen = 0;
+int shotPosition[2];
+int realCharactorInShotPosiotion;
 
 
 #define EMPTY_CELL_NUM  -1
@@ -190,6 +193,21 @@ void initBoard(){
 			board[i][j]=-1;
 		}
 	}
+}
+
+void shot(){
+  realCharactorInShotPosiotion = board[doodlerPosition[0] + 1][doodlerPosition[1]];
+  setCursor(doodlerPosition[0] +1, doodlerPosition[1]);
+  if(realCharactorInShotPosiotion == MONSTER_NUM){
+    print(" ");
+    board[shotPosition[0]][shotPosition[1]] = EMPTY_CELL_NUM;
+    isShotInScreen = 0;
+  } else{
+    print(".");
+    shotPosition[0] = doodlerPosition[0] + 1;
+    shotPosition[1] = doodlerPosition[1];
+    isShotInScreen = 1;
+  }
 }
 
 void print1OnScreen(){
@@ -560,6 +578,14 @@ void updateScore(int upCount){
   score += upCount;
 }
 
+void changeShot(){
+  setCursor(shotPosition[0],shotPosition[1]);
+  print(" ");
+  shotPosition[0] -= newPosition[0];
+  setCursor(shotPosition[0],shotPosition[1]);
+  print(".");
+}
+
 void pageUp(){
   if(newPosition[0] != 0){
     for(int i = 0; i < newPosition[0]; i++){
@@ -583,6 +609,7 @@ void pageUp(){
         }
       }
     }
+    changeShot();
     doodlerPosition[0] -= newPosition[0];
     genarateBoard(newPosition[0]);
   }
@@ -838,6 +865,29 @@ void changeDoodlerPosition(int moveDirecrion) {
   }
 }
 
+void moveShot(){
+  setCursor(shotPosition[0],shotPosition[1]);
+  if(realCharactorInShotPosiotion == -1){
+    print(" ");
+  } else {
+    write(realCharactorInShotPosiotion);
+  }
+  shotPosition[0] += 1;
+  if(shotPosition[0] < 20){
+    realCharactorInShotPosiotion = board[shotPosition[0]][shotPosition[1]];
+    setCursor(shotPosition[0],shotPosition[1]);
+    if(realCharactorInShotPosiotion == MONSTER_NUM){
+      print(" ");
+      board[shotPosition[0]][shotPosition[1]] = EMPTY_CELL_NUM;
+      isShotInScreen = 0;
+    } else {
+      print(".");
+    }
+  } else {
+    isShotInScreen = 0;
+  }
+}
+
 void moveDoodler() {
   if (doodlerDisplacementCount >= 1) {
     changeDoodlerPosition(1);
@@ -845,6 +895,7 @@ void moveDoodler() {
   else {
     changeDoodlerPosition(-1);
   }
+  moveShot();
 }
 
 bool stopFlag = true;
