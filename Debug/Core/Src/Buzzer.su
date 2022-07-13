@@ -1,0 +1,9 @@
+Buzzer.c:6:6:BUZZER_SetTIM	16	static
+Buzzer.c:12:6:BUZZER_Play_Doom	5480	static
+Buzzer.c:181:6:BUZZER_Play_HarryPotter	536	static
+Buzzer.c:269:6:BUZZER_Play_Supermario	2608	static
+Buzzer.c:405:6:BUZZER_Play_HappyBirthday	240	static
+Buzzer.c:467:6:BUZZER_Play_GameOfThrones	1080	static
+Buzzer.c:564:6:Tone	32	static
+Buzzer.c:585:6:NoTone	8	static
+Buzzer.c:590:6:BUZZER_Stop	8	static

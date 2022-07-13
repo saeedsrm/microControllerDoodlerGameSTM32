@@ -52,6 +52,7 @@ I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -72,6 +73,7 @@ static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -142,6 +144,17 @@ byte monster[] = {
     0x0A
 };
 
+byte shotCharactor[] = {
+  0x00,
+  0x00,
+  0x0E,
+  0x0E,
+  0x0E,
+  0x0E,
+  0x00,
+  0x00
+};
+
 int board[20][4];
 int score = 0;
 int difficulty = 5;
@@ -170,6 +183,7 @@ int realCharactorInShotPosiotion;
 #define COIL_NUM  3
 #define HOLE_NUM 4
 #define MONSTER_NUM  5
+#define SHOT_NUM 6
 #define REMOVE  0
 #define MOVE  1
 #define WRITE  2
@@ -180,7 +194,7 @@ int realCharactorInShotPosiotion;
 #define LEFT  -1
 #define RIGHT  1
 char buffer[32];
-int x=1234;
+int x=5234;
 int y=1;
 
 void genarateBoard(int blankRow);
@@ -196,16 +210,16 @@ void initBoard(){
 }
 
 void shot(){
-  realCharactorInShotPosiotion = board[doodlerPosition[0] + 1][doodlerPosition[1]];
-  setCursor(doodlerPosition[0] +1, doodlerPosition[1]);
+  realCharactorInShotPosiotion = board[doodlerPosition[0] + 2][doodlerPosition[1]];
+  setCursor(doodlerPosition[0] +2, doodlerPosition[1]);
+  shotPosition[0] = doodlerPosition[0] +2;
+  shotPosition[1] = doodlerPosition[1];
   if(realCharactorInShotPosiotion == MONSTER_NUM){
     print(" ");
     board[shotPosition[0]][shotPosition[1]] = EMPTY_CELL_NUM;
     isShotInScreen = 0;
   } else{
-    print(".");
-    shotPosition[0] = doodlerPosition[0] + 1;
-    shotPosition[1] = doodlerPosition[1];
+    write(SHOT_NUM);
     isShotInScreen = 1;
   }
 }
@@ -344,6 +358,7 @@ void showGameOverView(){
   write(MONSTER_NUM);
   setCursor(3,3);
   print("5.Menu");
+//  BUZZER_Play_GameOfThrones();
 }
 
 void menu(){
@@ -445,7 +460,7 @@ uint8_t Get_Pressed_Row(uint16_t GPIO_Pin)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 
-	if((HAL_GetTick() - now ) < 200){
+	if((HAL_GetTick() - now ) < 600){
 		return;
 	}
 	//LED On board
@@ -492,6 +507,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 	else if(number == 6 && isInMembersPage == 1){
 		menu();
+	} else if (number==8 && isShotInScreen==0){
+		shot();
 	}
 }
 /////////////////////////////end keypad//////////////////
@@ -507,10 +524,10 @@ void numberToBCD(int i){
 	if (x3>0) x3=1;
 	if (x4>0) x4=1;
 
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, x1);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, x2);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, x3);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, x4);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, x1);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, x2);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, x3);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, x4);
 }
 
 
@@ -522,13 +539,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   //	if(hadc->Instance == ADC1)
   //	{
+
   value = HAL_ADC_GetValue(hadc);
+  int tmp=((int)value)%10;
+  difficulty=3;
 //  HAL_ADC_Start_IT(&hadc1);
   //	}
 }
 
 int getRandom(int maxNum){
-  int rand_num= rand() % maxNum;
+  int rand_num= rand() % (maxNum);
   return rand_num;
 }
 
@@ -583,7 +603,7 @@ void changeShot(){
   print(" ");
   shotPosition[0] -= newPosition[0];
   setCursor(shotPosition[0],shotPosition[1]);
-  print(".");
+  write(SHOT_NUM);
 }
 
 void pageUp(){
@@ -609,11 +629,14 @@ void pageUp(){
         }
       }
     }
-    changeShot();
+    if (isShotInScreen==1){
+    	changeShot();
+    }
+
     doodlerPosition[0] -= newPosition[0];
     genarateBoard(newPosition[0]);
+    updateScore(newPosition[0]+1);
   }
-  updateScore(newPosition[0]+1);
 }
 
 void printBoard(int minRow){
@@ -734,8 +757,6 @@ void gameOver(){
 }
 
 void crashHole(){
-  downStatus = MONSTER_DOWN_STATUS;
-  doodlerPosition[0] = -1;
   gameOver();
 }
 
@@ -881,7 +902,7 @@ void moveShot(){
       board[shotPosition[0]][shotPosition[1]] = EMPTY_CELL_NUM;
       isShotInScreen = 0;
     } else {
-      print(".");
+      write(SHOT_NUM);
     }
   } else {
     isShotInScreen = 0;
@@ -895,7 +916,9 @@ void moveDoodler() {
   else {
     changeDoodlerPosition(-1);
   }
-  moveShot();
+  if(isShotInScreen==1){
+  	moveShot();
+  }
 }
 
 bool stopFlag = true;
@@ -904,37 +927,43 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
   if (htim->Instance == TIM3) // TIM3 for controlling the buzzer
   {
-//	  8,9,10,11
-//	  6,7,8, 9
-//	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
-//
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, 0);
-//
-//	  //9
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8, 1);
-//	  numberToBCD(x%10);
-//	  y=x/10;
-//
-//	  //8
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, 0);
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_9, 1);
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_12,1);
-//	  numberToBCD(y%10);
-//	  y=y/10;
-//
-//	  //7
-////	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_12,0);decimal
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9, 1);
-//	  numberToBCD(y%10);
-//	  y=y/10;
-//
-//	  //6
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, 0);
-//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, 1);
-//	  numberToBCD(y%10);
-//	  y=y/10;
 
+
+	  x=score+difficulty*1000;
+
+
+	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8);
+//   0
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, 0);
+
+	  //9
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8, 1);
+	  numberToBCD(x%10);
+	  y=x/10;
+	  HAL_Delay(5);
+
+	  //8
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, 0);
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_9, 1);
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_12,1);
+	  numberToBCD(y%10);
+	  y=y/10;
+	  HAL_Delay(5);
+
+	  //7
+//	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_12,0);decimal
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9, 1);
+	  numberToBCD(y%10);
+	  y=y/10;
+	  HAL_Delay(5);
+
+	  //6
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, 0);
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, 1);
+	  numberToBCD(y%10);
+	  y=y/10;
+	  HAL_Delay(5);
 
 //	if(stopFlag)
 //	{
@@ -952,6 +981,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		  moveDoodler();
 	  }
 
+   }
+  if (htim->Instance == TIM1){
+	  if(isShotInScreen==1){
+		  moveShot();
+	  }
    }
 }
 
@@ -993,6 +1027,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   //  bool x = false;
 
@@ -1007,6 +1042,7 @@ int main(void)
   createChar(HOLE_NUM, hole);
   createChar(MONSTER_NUM, monster);
   setCursor(0, 0);
+  createChar(SHOT_NUM,shotCharactor);
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   HAL_ADC_Start_IT(&hadc1);
 //  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
@@ -1014,7 +1050,7 @@ int main(void)
 //  htim2.Instance->CCR3 = 50;
 
   initBoard();
-
+  BUZZER_SetTIM(&htim2, TIM_CHANNEL_3);
   board[0][2] = DOODLER_NUM;
   doodlerPosition[0] = 0;
   doodlerPosition[1] = 2;
@@ -1030,9 +1066,7 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
 //  HAL_TIM_Base_Start_IT(&htim4);
-
-  BUZZER_SetTIM(&htim2, TIM_CHANNEL_3);
-//  BUZZER_Play_GameOfThrones();
+  HAL_TIM_Base_Start_IT(&htim1);
 
   /* USER CODE END 2 */
 
@@ -1086,10 +1120,11 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_I2C1
-                              |RCC_PERIPHCLK_ADC12;
+                              |RCC_PERIPHCLK_TIM1|RCC_PERIPHCLK_ADC12;
   PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.USBClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
+  PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLK_HCLK;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -1246,6 +1281,53 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 720-1;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 10000-1;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
   * @brief TIM2 Initialization Function
   * @param None
   * @retval None
@@ -1313,7 +1395,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 7200-1;
+  htim3.Init.Prescaler = 72-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 10000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -1474,7 +1556,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB12 PB13 PB14 PB15 */
